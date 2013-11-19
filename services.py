@@ -12,7 +12,7 @@ EMAIL_SENDER = os.environ.get(u'EMAIL_SENDER')
 EMAIL_TARGET = os.environ.get(u'EMAIL_TARGET')
 
 @app.route(u'/groupme/new_message', methods=[u'POST'])
-def hello_word():
+def groupme_new_message():
     j = request.get_json()
     g = requests.get(
         u'https://api.groupme.com/v3/groups/{group}'.format(**j),
