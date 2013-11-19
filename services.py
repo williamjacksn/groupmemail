@@ -6,8 +6,10 @@ from postmark import PMMail
 
 app = Flask(__name__)
 
-POSTMARK_API_KEY = os.environ.get(u'POSTMARK_API_KEY')
 GROUPME_ACCESS_TOKEN = os.environ.get(u'GROUPME_ACCESS_TOKEN')
+POSTMARK_API_KEY = os.environ.get(u'POSTMARK_API_KEY')
+EMAIL_SENDER = os.environ.get(u'EMAIL_SENDER')
+EMAIL_TARGET = os.environ.get(u'EMAIL_TARGET')
 
 @app.route(u'/groupme/new_message', methods=[u'POST'])
 def hello_word():
@@ -20,8 +22,8 @@ def hello_word():
     m = PMMail(
         api_key=POSTMARK_API_KEY,
         subject=u'New message in {}'.format(group_name),
-        sender=u'william@subtlecoolness.com',
-        to=u'william@subtlecoolness.com',
+        sender=EMAIL_SENDER,
+        to=EMAIL_TARGET,
         text_body=u'{name} said: {text}'.format(**j)
     )
     m.send(test=False)
