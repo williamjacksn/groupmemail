@@ -15,6 +15,7 @@ EMAIL_TARGET = os.environ.get(u'EMAIL_TARGET')
 @app.route(u'/groupme/new_message', methods=[u'POST'])
 def groupme_new_message():
     j = request.get_json()
+    app.logger.debug(j)
     for field in [u'name', u'text', u'group']:
         if field not in j:
             e_msg = u'Posted parameters did not include a required field: {}'
