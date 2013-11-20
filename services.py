@@ -16,13 +16,13 @@ EMAIL_TARGET = os.environ.get(u'EMAIL_TARGET')
 def groupme_new_message():
     j = request.get_json()
     app.logger.debug(j)
-    for field in [u'name', u'text', u'group']:
+    for field in [u'name', u'text', u'group_id']:
         if field not in j:
             e_msg = u'Posted parameters did not include a required field: {}'
             app.logger.error(e_msg.format(field))
             abort(500)
     g = requests.get(
-        u'https://api.groupme.com/v3/groups/{group}'.format(**j),
+        u'https://api.groupme.com/v3/groups/{group_id}'.format(**j),
         params={u'token': GROUPME_ACCESS_TOKEN}
     )
     group_name = g.json().get(u'response').get(u'name')
