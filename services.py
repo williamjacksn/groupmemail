@@ -1,10 +1,11 @@
 import os
 import requests
 
-from flask import Flask, request
+from flask import abort, Flask, request
 from postmark import PMMail
 
 app = Flask(__name__)
+app.debug = True
 
 GROUPME_ACCESS_TOKEN = os.environ.get(u'GROUPME_ACCESS_TOKEN')
 POSTMARK_API_KEY = os.environ.get(u'POSTMARK_API_KEY')
@@ -14,6 +15,11 @@ EMAIL_TARGET = os.environ.get(u'EMAIL_TARGET')
 @app.route(u'/groupme/new_message', methods=[u'POST'])
 def groupme_new_message():
     j = request.get_json()
+    for field in [u'name', u'text', u'group']:
+        if field not in j:
+            e_msg = u'Posted parameters did not include a required field: {}'
+            app.logger.error(e_msg.format(field))
+            abort(500)
     g = requests.get(
         u'https://api.groupme.com/v3/groups/{group}'.format(**j),
         params={u'token': GROUPME_ACCESS_TOKEN}
@@ -30,4 +36,4 @@ def groupme_new_message():
     return u'Thank you.'
 
 if __name__ == u'__main__':
-    app.run(host=u'0.0.0.0')
+    app.run(debug=True, host=u'0.0.0.0')
