@@ -26,12 +26,14 @@ def groupme_new_message():
         params={u'token': GROUPME_ACCESS_TOKEN}
     )
     group_name = g.json().get(u'response').get(u'name')
+    email_body = u'{name} said: {text}'.format(**j)
+    email_body = u'{}\n\nhttps://app.groupme.com/chats'.format(email_body)
     m = PMMail(
         api_key=POSTMARK_API_KEY,
         subject=u'New message in {}'.format(group_name),
         sender=EMAIL_SENDER,
         to=EMAIL_TARGET,
-        text_body=u'{name} said: {text}'.format(**j)
+        text_body=email_body
     )
     m.send(test=False)
     return u'Thank you.'
