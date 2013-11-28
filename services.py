@@ -16,7 +16,7 @@ EMAIL_TARGET = os.environ.get(u'EMAIL_TARGET')
 def groupme_new_message():
     j = request.get_json()
     app.logger.debug(j)
-    for field in [u'name', u'text', u'group_id']:
+    for field in [u'name', u'text', u'group_id', u'attachments']:
         if field not in j:
             e_msg = u'Posted parameters did not include a required field: {}'
             app.logger.error(e_msg.format(field))
@@ -26,14 +26,21 @@ def groupme_new_message():
         params={u'token': GROUPME_ACCESS_TOKEN}
     )
     group_name = g.json().get(u'response').get(u'name')
-    email_body = u'{name} said: {text}'.format(**j)
-    email_body = u'{}\n\nhttps://app.groupme.com/chats'.format(email_body)
+    email_body = u'<p>{name} said: {text}</p>'.format(**j)
+
+    for attachment in j.get(u'attachments'):
+        if attachment.get(u'type') == u'image':
+            img_tag = u'<img src="{url}" />'.format(**attachment)
+            email_body = u'{}\n\n<p>{}</p>'.format(email_body, img_tag)
+
+    a_tag = u'<a href="https://app.groupme.com/chats">Go to GroupMe</a>'
+    email_body = u'{}\n\n<p>{}</p>'.format(email_body, a_tag)
     m = PMMail(
         api_key=POSTMARK_API_KEY,
         subject=u'New message in {}'.format(group_name),
         sender=EMAIL_SENDER,
         to=EMAIL_TARGET,
-        text_body=email_body
+        html_body=email_body
     )
     m.send(test=False)
     return u'Thank you.'
