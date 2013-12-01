@@ -26,7 +26,10 @@ def groupme_new_message():
         params={u'token': GROUPME_ACCESS_TOKEN}
     )
     group_name = g.json().get(u'response').get(u'name')
-    email_body = u'<p>{name} said: {text}</p>'.format(**j)
+    if j.get(u'text') is None:
+        email_body = u'<p>{name} posted a picture:</p>'.format(**j)
+    else:
+        email_body = u'<p>{name} said: {text}</p>'.format(**j)
 
     for attachment in j.get(u'attachments'):
         if attachment.get(u'type') == u'image':
