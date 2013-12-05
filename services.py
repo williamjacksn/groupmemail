@@ -1,16 +1,23 @@
 import os
 import requests
 
-from flask import abort, Flask, request
+from flask import abort, Flask, render_template, request
 from postmark import PMMail
 
 app = Flask(__name__)
 app.debug = True
 
 GROUPME_ACCESS_TOKEN = os.environ.get(u'GROUPME_ACCESS_TOKEN')
+GROUPME_CLIENT_ID = os.environ.get(u'GROUPME_CLIENT_ID')
 POSTMARK_API_KEY = os.environ.get(u'POSTMARK_API_KEY')
 EMAIL_SENDER = os.environ.get(u'EMAIL_SENDER')
 EMAIL_TARGET = os.environ.get(u'EMAIL_TARGET')
+
+@app.route(u'/groupme')
+def groupme_index():
+    if u'access_token' not in request.args:
+        return render_template(u'groupme_index.html', cid=GROUPME_CLIENT_ID)
+    return render_template(u'groupme_list.html')
 
 @app.route(u'/groupme/new_message', methods=[u'POST'])
 def groupme_new_message():
