@@ -8,7 +8,13 @@
     </head>
     <body>
         <div class="container">
-            <h1>Your access token is {{ request.args.access_token }}</h1>
+            <h1><img width="50" src="{{ user_img }}"> Hello, {{ username }}.</h1>
+            <p>Here are your groups:</p>
+            <ul>
+            {% for group in groups %}
+                <li>{{ group.name }} // {{ group.description }}</li>
+            {% endfor %}
+            </ul>
         </div>
         <script src="//code.jquery.com/jquery.js"></script>
         <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
