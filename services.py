@@ -1,8 +1,8 @@
 import os
+import postmark
 import requests
 
 from flask import abort, Flask, render_template, request
-from postmark import PMMail
 
 app = Flask(__name__)
 app.debug = True
@@ -17,20 +17,9 @@ EMAIL_TARGET = os.environ.get(u'EMAIL_TARGET')
 def groupme_index():
     if u'access_token' not in request.args:
         return render_template(u'groupme_index.html', cid=GROUPME_CLIENT_ID)
-
     template_vars = dict()
     token = request.args.get(u'access_token')
-    url = u'https://api.groupme.com/v3/users/me'
-    params = {u'token': token}
-    u = requests.get(url, params=params)
-    user = u.json().get(u'response')
-    template_vars[u'username'] = user.get(u'name')
-    template_vars[u'user_img'] = user.get(u'image_url')
-
-    url = u'https://api.groupme.com/v3/groups'
-    g = requests.get(url, params=params)
-    template_vars[u'groups'] = g.json().get(u'response')
-
+    template_vars[u'token'] = token
     return render_template(u'groupme_list.html', **template_vars)
 
 @app.route(u'/groupme/new_message', methods=[u'POST'])
@@ -59,7 +48,7 @@ def groupme_new_message():
 
     a_tag = u'<a href="https://app.groupme.com/chats">Go to GroupMe</a>'
     email_body = u'{}\n\n<p>{}</p>'.format(email_body, a_tag)
-    m = PMMail(
+    m = postmark.PMMail(
         api_key=POSTMARK_API_KEY,
         subject=u'New message in {}'.format(group_name),
         sender=EMAIL_SENDER,
