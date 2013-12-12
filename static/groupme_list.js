@@ -9,7 +9,7 @@ for (i = 0; i < metas.length; i++) {
 
 function groupme_users_me_callback() {
     var resp = JSON.parse(this.responseText).response;
-    var img_src = resp.image_url;
+    var img_src = resp.image_url.replace("http:", "https:");
     var img_el = document.createElement("img");
     img_el.setAttribute("src", img_src);
     img_el.setAttribute("width", "40");
