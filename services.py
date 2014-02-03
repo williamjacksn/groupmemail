@@ -11,11 +11,9 @@ app.debug = True
 app.config[u'SQLALCHEMY_DATABASE_URI'] = os.environ.get(u'DB_URI')
 db = flask.ext.sqlalchemy.SQLAlchemy(app)
 
-GROUPME_ACCESS_TOKEN = os.environ.get(u'GROUPME_ACCESS_TOKEN')
 GROUPME_CLIENT_ID = os.environ.get(u'GROUPME_CLIENT_ID')
 POSTMARK_API_KEY = os.environ.get(u'POSTMARK_API_KEY')
 EMAIL_SENDER = os.environ.get(u'EMAIL_SENDER')
-EMAIL_TARGET = os.environ.get(u'EMAIL_TARGET')
 
 class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
@@ -24,9 +22,10 @@ class User(db.Model):
     expiration = db.Column(db.DateTime, nullable=False)
     subscriptions = db.relationship(u'Subscription')
 
-    def __init__(self, user_id, email, expiration=None):
+    def __init__(self, user_id, email, token, expiration=None):
         self.user_id = user_id
         self.email = email
+        self.token = token
         if expiration is None:
             expiration = datetime.datetime.utcnow() + datetime.timedelta(7)
         self.expiration = expiration
@@ -51,9 +50,12 @@ class Subscription(db.Model):
 
     group_id = db.Column(db.Integer, primary_key=True, nullable=False)
 
-    def __init__(self, user, group_id):
-        self.user = user
+    def __init__(self, user_id, group_id):
+        self.user_id = user_id
         self.group_id = group_id
+
+    def __repr__(self):
+        return '<{} : {}>'.format(self.user_id, self.group_id)
 
 @app.route(u'/groupme')
 def groupme_index():
@@ -126,8 +128,13 @@ def groupme_incoming(user_id):
 
     group_id = j.get(u'group_id')
 
+    sub = Subscription.query.get((user_id, group_id))
+    if sub is None:
+        app.logger.error(u'{} not subscribed to {}'.format(user_id, group_id))
+        flask.abort(500)
+
     url = u'https://api.groupme.com/v3/groups/{group_id}'.format(**j)
-    g = requests.get(url, params={u'token': GROUPME_ACCESS_TOKEN})
+    g = requests.get(url, params={u'token': user.token})
 
     group_name = g.json().get(u'response').get(u'name')
     email_body = build_email_body(j)
@@ -135,7 +142,7 @@ def groupme_incoming(user_id):
         api_key=POSTMARK_API_KEY,
         subject=u'New message in {}'.format(group_name),
         sender=EMAIL_SENDER,
-        to=EMAIL_TARGET,
+        to=user.email,
         html_body=email_body
     )
     m.send(test=False)
