@@ -20,6 +20,7 @@ EMAIL_TARGET = os.environ.get(u'EMAIL_TARGET')
 class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String, unique=True, nullable=False)
+    token = db.Column(db.String, nullable=False)
     expiration = db.Column(db.DateTime, nullable=False)
     subscriptions = db.relationship(u'Subscription')
 
@@ -93,20 +94,7 @@ def groupme_get_user(user_id):
     }
     return flask.jsonify(resp)
 
-@app.route(u'/groupme/incoming/<user_id>/<group_id>', methods=[u'POST'])
-def groupme_new_message(user_id, group_id):
-    j = flask.request.get_json()
-    app.logger.debug(j)
-    for field in [u'name', u'text', u'group_id', u'attachments']:
-        if field not in j:
-            e_msg = u'Posted parameters did not include a required field: {}'
-            app.logger.error(e_msg.format(field))
-            flask.abort(500)
-    g = requests.get(
-        u'https://api.groupme.com/v3/groups/{group_id}'.format(**j),
-        params={u'token': GROUPME_ACCESS_TOKEN}
-    )
-    group_name = g.json().get(u'response').get(u'name')
+def build_email_body(j):
     if j.get(u'text') is None:
         email_body = u'<p>{name} posted a picture:</p>'.format(**j)
     else:
@@ -119,6 +107,30 @@ def groupme_new_message(user_id, group_id):
 
     a_tag = u'<a href="https://app.groupme.com/chats">Go to GroupMe</a>'
     email_body = u'{}\n\n<p>{}</p>'.format(email_body, a_tag)
+    return email_body
+
+@app.route(u'/groupme/incoming/<int:user_id>', methods=[u'POST'])
+def groupme_incoming(user_id):
+    user = User.query.get(user_id)
+    if user is None:
+        app.logger.error(u'{} is not a known user_id'.format(user_id))
+        flask.abort(404)
+
+    j = flask.request.get_json()
+    app.logger.debug(j)
+    for field in [u'name', u'text', u'group_id', u'attachments']:
+        if field not in j:
+            e_msg = u'Posted parameters did not include a required field: {}'
+            app.logger.error(e_msg.format(field))
+            flask.abort(500)
+
+    group_id = j.get(u'group_id')
+
+    url = u'https://api.groupme.com/v3/groups/{group_id}'.format(**j)
+    g = requests.get(url, params={u'token': GROUPME_ACCESS_TOKEN})
+
+    group_name = g.json().get(u'response').get(u'name')
+    email_body = build_email_body(j)
     m = postmark.PMMail(
         api_key=POSTMARK_API_KEY,
         subject=u'New message in {}'.format(group_name),
