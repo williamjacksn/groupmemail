@@ -1,4 +1,6 @@
+import datetime
 import flask
+import flask.ext.sqlalchemy
 import os
 import postmark
 import psycopg2
@@ -6,18 +8,55 @@ import requests
 
 app = flask.Flask(__name__)
 app.debug = True
+app.config[u'SQLALCHEMY_DATABASE_URI'] = os.environ.get(u'DB_URI')
+db = flask.ext.sqlalchemy.SQLAlchemy(app)
 
 GROUPME_ACCESS_TOKEN = os.environ.get(u'GROUPME_ACCESS_TOKEN')
 GROUPME_CLIENT_ID = os.environ.get(u'GROUPME_CLIENT_ID')
 POSTMARK_API_KEY = os.environ.get(u'POSTMARK_API_KEY')
 EMAIL_SENDER = os.environ.get(u'EMAIL_SENDER')
 EMAIL_TARGET = os.environ.get(u'EMAIL_TARGET')
-DB_URL = os.environ.get(u'HEROKU_POSTGRESQL_COBALT_URL')
+
+class User(db.Model):
+    user_id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String, unique=True, nullable=False)
+    expiration = db.Column(db.DateTime, nullable=False)
+    subscriptions = db.relationship(u'Subscription')
+
+    def __init__(self, user_id, email, expiration=None):
+        self.user_id = user_id
+        self.email = email
+        if expiration is None:
+            expiration = datetime.datetime.utcnow() + datetime.timedelta(7)
+        self.expiration = expiration
+
+    def __repr__(self):
+        return '<User {} ({})>'.format(self.user_id, self.email)
+
+    def to_dict(self):
+        user = {
+            u'id': self.user_id,
+            u'email': self.email,
+            u'expiration': self.expiration,
+            u'subscriptions': []
+        }
+        for sub in self.subscriptions:
+            user[u'subscriptions'].append(sub.group_id)
+        return user
+
+class Subscription(db.Model):
+    _user_fk = db.ForeignKey(u'user.user_id')
+    user_id = db.Column(db.Integer, _user_fk, primary_key=True)
+
+    group_id = db.Column(db.Integer, primary_key=True, nullable=False)
+
+    def __init__(self, user, group_id):
+        self.user = user
+        self.group_id = group_id
 
 @app.route(u'/groupme')
 def groupme_index():
     if u'groupme_token' in flask.request.cookies:
-        db = GMMailDatabase()
         template_vars = dict()
         template_vars[u'token'] = flask.request.cookies.get(u'groupme_token')
         return flask.render_template(u'groupme_list.html', **template_vars)
@@ -46,8 +85,16 @@ def groupme_logout():
     resp.delete_cookie(u'groupme_token')
     return resp
 
-@app.route(u'/groupme/new_message', methods=[u'POST'])
-def groupme_new_message():
+@app.route(u'/groupme/users/<int:user_id>', methods=[u'GET'])
+def groupme_get_user(user_id):
+    user = User.query.get_or_404(user_id)
+    resp = {
+        u'users': [ user.to_dict() ]
+    }
+    return flask.jsonify(resp)
+
+@app.route(u'/groupme/incoming/<user_id>/<group_id>', methods=[u'POST'])
+def groupme_new_message(user_id, group_id):
     j = flask.request.get_json()
     app.logger.debug(j)
     for field in [u'name', u'text', u'group_id', u'attachments']:
@@ -81,21 +128,6 @@ def groupme_new_message():
     )
     m.send(test=False)
     return u'Thank you.'
-
-
-class GMMailDatabase(object):
-    def __init__(self):
-        self.cnx = psycopg2.connect(DB_URL)
-        cur = self.cnx.cursor()
-        cur.execute(u'create table if not exists users (user_id integer '
-            u'primary key, email text unique not null, expiration timestamp '
-            u'default (current_timestamp + interval \'1 week\') not null)')
-        cur.execute(u'create table if not exists subscriptions (user_id '
-            u'integer references users on delete cascade, group_id integer '
-            u'not null, primary key (user_id, group_id))')
-        self.cnx.commit()
-        cur.close()
-
 
 if __name__ == u'__main__':
     app.run(debug=True, host=u'0.0.0.0')

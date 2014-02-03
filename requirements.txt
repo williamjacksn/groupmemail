@@ -7,3 +7,5 @@ gunicorn==18.0
 python-postmark==0.3.2
 requests==2.0.1
 psycopg2==2.5.1
+SQLAlchemy==0.9.1
+Flask-SQLAlchemy==1.0
