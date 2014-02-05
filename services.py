@@ -17,52 +17,39 @@ EMAIL_SENDER = os.environ.get(u'EMAIL_SENDER')
 
 class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String, unique=True, nullable=False)
     token = db.Column(db.String, nullable=False)
     expiration = db.Column(db.DateTime, nullable=False)
-    subscriptions = db.relationship(u'Subscription')
+    _email = None
 
-    def __init__(self, user_id, email, token, expiration=None):
+    def __init__(self, user_id, token, expiration=None):
         self.user_id = user_id
-        self.email = email
         self.token = token
         if expiration is None:
             expiration = datetime.datetime.utcnow() + datetime.timedelta(7)
         self.expiration = expiration
 
     def __repr__(self):
-        return '<User {} ({})>'.format(self.user_id, self.email)
+        return '<User {}>'.format(self.user_id)
+
+    @property
+    def email(self):
+        if self._email is None:
+            url = u'https://api.groupme.com/v3/users/me'
+            u = requests.get(url, params={u'token': self.token})
+            self._email = u.json().get(u'response').get(u'email')
+        return self._email
 
     def to_dict(self):
         user = {
             u'id': self.user_id,
-            u'email': self.email,
-            u'expiration': self.expiration,
-            u'subscriptions': []
+            u'token': self.token,
+            u'expiration': self.expiration
         }
-        for sub in self.subscriptions:
-            user[u'subscriptions'].append(sub.group_id)
-        return user
-
-class Subscription(db.Model):
-    _user_fk = db.ForeignKey(u'user.user_id')
-    user_id = db.Column(db.Integer, _user_fk, primary_key=True)
-
-    group_id = db.Column(db.Integer, primary_key=True, nullable=False)
-
-    def __init__(self, user_id, group_id):
-        self.user_id = user_id
-        self.group_id = group_id
-
-    def __repr__(self):
-        return '<{} : {}>'.format(self.user_id, self.group_id)
 
 @app.route(u'/groupme')
 def groupme_index():
     if u'groupme_token' in flask.request.cookies:
-        template_vars = dict()
-        template_vars[u'token'] = flask.request.cookies.get(u'groupme_token')
-        return flask.render_template(u'groupme_list.html', **template_vars)
+        return flask.render_template(u'groupme_list.html')
 
     return flask.render_template(u'groupme_index.html', cid=GROUPME_CLIENT_ID)
 
@@ -88,13 +75,10 @@ def groupme_logout():
     resp.delete_cookie(u'groupme_token')
     return resp
 
-@app.route(u'/groupme/users/<int:user_id>', methods=[u'GET'])
-def groupme_get_user(user_id):
-    user = User.query.get_or_404(user_id)
-    resp = {
-        u'users': [ user.to_dict() ]
-    }
-    return flask.jsonify(resp)
+def get_group_name(group_id, token):
+    url = u'https://api.groupme.com/v3/groups/{}'.format(group_id)
+    g = requests.get(url, params={u'token': token})
+    return g.json().get(u'response').get(u'name')
 
 def build_email_body(j):
     if j.get(u'text') is None:
@@ -118,6 +102,8 @@ def groupme_incoming(user_id):
         app.logger.error(u'{} is not a known user_id'.format(user_id))
         flask.abort(404)
 
+    params = {u'token': user.token}
+
     j = flask.request.get_json()
     app.logger.debug(j)
     for field in [u'name', u'text', u'group_id', u'attachments']:
@@ -126,24 +112,14 @@ def groupme_incoming(user_id):
             app.logger.error(e_msg.format(field))
             flask.abort(500)
 
-    group_id = j.get(u'group_id')
-
-    sub = Subscription.query.get((user_id, group_id))
-    if sub is None:
-        app.logger.error(u'{} not subscribed to {}'.format(user_id, group_id))
-        flask.abort(500)
-
-    url = u'https://api.groupme.com/v3/groups/{group_id}'.format(**j)
-    g = requests.get(url, params={u'token': user.token})
-
-    group_name = g.json().get(u'response').get(u'name')
-    email_body = build_email_body(j)
+    group_name = get_group_name(j.get(u'group_id'), user.token)
+    html_body = build_email_body(j)
     m = postmark.PMMail(
         api_key=POSTMARK_API_KEY,
         subject=u'New message in {}'.format(group_name),
         sender=EMAIL_SENDER,
         to=user.email,
-        html_body=email_body
+        html_body=html_body
     )
     m.send(test=False)
     return u'Thank you.'

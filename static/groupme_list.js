@@ -1,8 +1,8 @@
 var cookies = document.cookie.split("; ");
 for (i = 0; i < cookies.length; i++) {
     c = cookies[i].split("=");
-    if (c[0] = "groupme_auth_token") {
-        var groupme_auth_token = c[1]
+    if (c[0] = "groupme_token") {
+        var groupme_token = c[1]
     }
 }
 
@@ -48,7 +48,7 @@ function groupme_groups_callback() {
 
     var xhr_bots = new XMLHttpRequest();
     xhr_bots.onload = groupme_bots_callback;
-    var url = "https://api.groupme.com/v3/bots?token=" + groupme_auth_token;
+    var url = "https://api.groupme.com/v3/bots?token=" + groupme_token;
     xhr_bots.open("get", url);
     xhr_bots.send();
 }
@@ -66,12 +66,12 @@ function groupme_bots_callback() {
 
 var xhr_users_me = new XMLHttpRequest();
 xhr_users_me.onload = groupme_users_me_callback;
-var url = "https://api.groupme.com/v3/users/me?token=" + groupme_auth_token;
+var url = "https://api.groupme.com/v3/users/me?token=" + groupme_token;
 xhr_users_me.open("get", url);
 xhr_users_me.send();
 
 var xhr_groups = new XMLHttpRequest();
 xhr_groups.onload = groupme_groups_callback;
-url = "https://api.groupme.com/v3/groups?token=" + groupme_auth_token;
+url = "https://api.groupme.com/v3/groups?token=" + groupme_token;
 xhr_groups.open("get", url);
 xhr_groups.send();
