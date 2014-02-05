@@ -9,7 +9,7 @@ for (i = 0; i < cookies.length; i++) {
 function add_class(element, class_name) {
     var current_classes = element.className.split(" ");
     current_classes.push(class_name);
-    element.className = current_classes.join(" ");
+    element.className = current_classes.join(" ").trim();
 }
 
 function groupme_users_me_callback() {
