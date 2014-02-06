@@ -12,9 +12,45 @@ app.debug = True
 app.config[u'SQLALCHEMY_DATABASE_URI'] = os.environ.get(u'DB_URI')
 db = flask.ext.sqlalchemy.SQLAlchemy(app)
 
-GROUPME_CLIENT_ID = os.environ.get(u'GROUPME_CLIENT_ID')
+GM_CID = os.environ.get(u'GROUPME_CLIENT_ID')
 POSTMARK_API_KEY = os.environ.get(u'POSTMARK_API_KEY')
 EMAIL_SENDER = os.environ.get(u'EMAIL_SENDER')
+
+class GroupMeClient(object):
+    def __init__(self, token):
+        self.params = {u'token': token}
+
+    def me(self):
+        url = u'https://api.groupme.com/v3/users/me'
+        r = requests.get(url, params=self.params)
+        return r.json()
+
+    def group_info(self, group_id):
+        url = u'https://api.groupme.com/v3/groups/{}'.format(group_id)
+        r = requests.get(url, params=self.params)
+        return r.json()
+
+    def bots(self):
+        url = u'https://api.groupme.com/v3/bots'
+        r = requests.get(url, params=self.params)
+        return r.json()
+
+    def create_bot(self, name, group_id, callback_url):
+        url = u'https://api.groupme.com/v3/bots'
+        bot_def = {
+            u'name': name,
+            u'group_id': group_id,
+            u'callback_url': callback_url
+        }
+        bot = {u'bot': bot_def}
+        data = json.dumps(bot)
+        r = requests.post(url, params=self.params, data=data)
+
+    def destroy_bot(self, bot_id):
+        url = u'https://api.groupme.com/v3/bots/destroy'
+        data = {u'bot_id': bot_id}
+        r = requests.post(url, params=self.params, data=json.dumps(data))
+        return r.status_code
 
 class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
@@ -35,9 +71,9 @@ class User(db.Model):
     @property
     def email(self):
         if self._email is None:
-            url = u'https://api.groupme.com/v3/users/me'
-            u = requests.get(url, params={u'token': self.token})
-            self._email = u.json().get(u'response').get(u'email')
+            gm = GroupMeClient(self.token)
+            gm_user = gm.me()
+            self._email = gm_user.get(u'response').get(u'email')
         return self._email
 
     def to_dict(self):
@@ -52,7 +88,7 @@ def groupme_index():
     if u'groupme_token' in flask.request.cookies:
         return flask.render_template(u'groupme_list.html')
 
-    return flask.render_template(u'groupme_index.html', cid=GROUPME_CLIENT_ID)
+    return flask.render_template(u'groupme_index.html', cid=GM_CID)
 
 @app.route(u'/groupme/login')
 def groupme_login():
@@ -76,31 +112,48 @@ def groupme_logout():
     resp.delete_cookie(u'groupme_token')
     return resp
 
-@app.route(u'/groupme/subscribe/<int:user_id>/<int:group_id>')
-def groupme_subscribe(user_id, group_id):
-    token = flask.request.cookies.get(u'groupme_token')
+@app.route(u'/groupme/subscribe/<int:group_id>')
+def groupme_subscribe(group_id):
+    if u'groupme_token' in flask.request.cookies:
+        token = flask.request.cookies.get(u'groupme_token')
+    else:
+        return flask.redirect(flask.url_for(u'groupme_index'))
+
+    gm = GroupMeClient(token)
+    gm_user = gm.me()
+    user_id = gm_user.get(u'response').get(u'id')
+
     user = User.query.get(user_id)
     if user is None:
         user = User(user_id, token)
         db.session.add(user)
         db.session.commit()
 
-    url = u'https://api.groupme.com/v3/bots'
-    params = {u'token': token}
-    cburl = flask.url_for(u'groupme_incoming', user_id=user_id, _external=True)
-    bot_def = {
-        u'name': u'Subtle Coolness Services',
-        u'group_id': group_id,
-        u'callback_url': cburl
-    }
-    data = {u'bot': bot_def}
-    r = requests.post(url, params=params, data=json.dumps(data))
-    return r.text
+    url = flask.url_for(u'groupme_incoming', user_id=user_id, _external=True)
+    gm.create_bot(u'Subtle Coolness Services', group_id, url)
 
-def get_group_name(group_id, token):
-    url = u'https://api.groupme.com/v3/groups/{}'.format(group_id)
-    g = requests.get(url, params={u'token': token})
-    return g.json().get(u'response').get(u'name')
+    return flask.redirect(flask.url_for(u'groupme_index'))
+
+@app.route(u'/groupme/unsubscribe/<int:group_id>')
+def groupme_unsubscribe(group_id):
+    if u'groupme_token' in flask.request.cookies:
+        token = flask.request.cookies.get(u'groupme_token')
+    else:
+        return flask.redirect(flask.url_for(u'groupme_index'))
+
+    gm = GroupMeClient(token)
+    gm_user = gm.me()
+    user_id = gm_user.get(u'response').get(u'id')
+
+    url = flask.url_for(u'groupme_incoming', user_id=user_id)
+
+    bots = gm.bots()
+    for bot in bots.get(u'response'):
+        if int(bot.get(u'group_id')) == group_id:
+            if url in bot.get(u'callback_url'):
+                d = gm.destroy_bot(bot.get(u'bot_id'))
+
+    return flask.redirect(flask.url_for(u'groupme_index'))
 
 def build_email_body(j):
     if j.get(u'text') is None:
@@ -124,8 +177,6 @@ def groupme_incoming(user_id):
         app.logger.error(u'{} is not a known user_id'.format(user_id))
         flask.abort(404)
 
-    params = {u'token': user.token}
-
     j = flask.request.get_json()
     app.logger.debug(j)
     for field in [u'name', u'text', u'group_id', u'attachments']:
@@ -134,7 +185,10 @@ def groupme_incoming(user_id):
             app.logger.error(e_msg.format(field))
             flask.abort(500)
 
-    group_name = get_group_name(j.get(u'group_id'), user.token)
+    gm = GroupMeClient(user.token)
+
+    gm_group = gm.group_info(j.get(u'group_id'))
+    group_name = gm_group.get(u'response').get(u'name')
     html_body = build_email_body(j)
     m = postmark.PMMail(
         api_key=POSTMARK_API_KEY,
