@@ -87,10 +87,11 @@ def groupme_subscribe(user_id, group_id):
 
     url = u'https://api.groupme.com/v3/bots'
     params = {u'token': token}
+    cburl = flask.url_for(u'groupme_incoming', user_id=user_id, _external=True)
     bot_def = {
         u'name': u'Subtle Coolness Services',
         u'group_id': group_id,
-        u'callback_url': flask.url_for(u'groupme_incoming', user_id=user_id)
+        u'callback_url': cburl
     }
     data = {u'bot': bot_def}
     r = requests.post(url, params=params, data=json.dumps(data))
