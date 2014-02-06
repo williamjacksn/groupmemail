@@ -1,6 +1,7 @@
 import datetime
 import flask
 import flask.ext.sqlalchemy
+import json
 import os
 import postmark
 import psycopg2
@@ -74,6 +75,26 @@ def groupme_logout():
     resp = flask.make_response(flask.redirect(index_url))
     resp.delete_cookie(u'groupme_token')
     return resp
+
+@app.route(u'/groupme/subscribe/<int:user_id>/<int:group_id>')
+def groupme_subscribe(user_id, group_id):
+    token = flask.request.cookies.get(u'groupme_token')
+    user = User.query.get(user_id)
+    if user is None:
+        user = User(user_id, token)
+        db.session.add(user)
+        db.session.commit()
+
+    url = u'https://api.groupme.com/v3/bots'
+    params = {u'token': token}
+    bot_def = {
+        u'name': u'Subtle Coolness Services',
+        u'group_id': group_id,
+        u'callback_url': flask.url_for(u'groupme_incoming', user_id=user_id)
+    }
+    data = {u'bot': bot_def}
+    r = requests.post(url, params=params, data=json.dumps(data))
+    return r.text
 
 def get_group_name(group_id, token):
     url = u'https://api.groupme.com/v3/groups/{}'.format(group_id)
