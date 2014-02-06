@@ -3,15 +3,17 @@
     <head>
         <title>GroupMemail</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='groupme_list.css') }}"></style>
+        <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}"></style>
     </head>
     <body>
-        <div>
-            <h1>Loading...</h1>
-            <p id="group_p">Loading your groups...</p>
-            <ul id="group_list"></ul>
-
-            <p><a href="{{ url_for('groupme_logout') }}">Log out</a></p>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h1>Hello, <span id="groupme_username">GroupMe User</span>. <a class="btn btn-danger pull-right" href="{{ url_for('groupme_logout') }}">Log out</a></h1>
+                    <p id="group_p" class="lead">Loading...</p>
+                    <div id="group_list" class="list-group"></div>
+                </div>
+            </div>
         </div>
         <script type="text/javascript" src="{{ url_for('static', filename='groupme_list.js') }}"></script>
     </body>
