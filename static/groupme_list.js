@@ -23,10 +23,10 @@ function groupme_me_callback() {
     document.getElementById("groupme_username").textContent = resp.name;
 
     var a = document.createElement("a");
-    a.innerText = resp.email;
+    a.innerHTML = resp.email;
 
     var p = document.createElement("p");
-    p.innerText = "Email notifications will be sent to ";
+    p.innerHTML = "Email notifications will be sent to ";
     p.appendChild(a);
 
     var div = document.getElementById("main_content");
@@ -38,9 +38,9 @@ function groupme_groups_callback() {
 
     var group_p = document.getElementById("group_p");
     if (resp.length == 0) {
-        group_p.innerText = "You don&rsquo;t belong to any groups.";
+        group_p.innerHTML = "You don&rsquo;t belong to any groups.";
     } else {
-        group_p.innerText = "Click on a group to toggle email notifications.";
+        group_p.innerHTML = "Click on a group to toggle email notifications.";
     }
 
     var group_list = document.getElementById("group_list");
@@ -50,13 +50,13 @@ function groupme_groups_callback() {
         var a = document.createElement("a");
         a.setAttribute("id", group.group_id);
         a.setAttribute("href", "/groupme/subscribe/" + group.group_id);
-        a.innerText = group.name + " ";
+        a.innerHTML = group.name + " ";
         add_class(a, "list-group-item");
 
         var span = document.createElement("span");
         span.setAttribute("id", group.group_id + "_badge")
         add_class(span, "badge");
-        span.innerText = "Not subscribed ✗";
+        span.innerHTML = "Not subscribed ✗";
 
         a.appendChild(span);
         group_list.appendChild(a);
@@ -83,7 +83,7 @@ function groupme_bots_callback() {
 function mark_subscribed(group_id) {
     var group_el = document.getElementById(group_id);
     group_el.setAttribute("href", "/groupme/unsubscribe/" + group_id);
-    group_el.lastChild.innerText = "Subscribed ✓";
+    group_el.lastChild.innerHTML = "Subscribed ✓";
     add_class(group_el, "list-group-item-success");
 }
 
