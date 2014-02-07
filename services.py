@@ -90,6 +90,16 @@ def groupme_index():
 
     return flask.render_template(u'groupme_index.html', cid=GM_CID)
 
+@app.route(u'/groupme/auth')
+def groupme_auth():
+    if u'access_token' in flask.request.args:
+        token = flask.request.args.get(u'access_token')
+        url = flask.url_for(u'groupme_login', access_token=token)
+        url = u'{}{}'.format(os.environ.get(u'BASE_URL'), url)
+        return flask.redirect(url)
+
+    return flask.redirect(flask.url_for(u'groupme_index'))
+
 @app.route(u'/groupme/login')
 def groupme_login():
     index_url = flask.url_for(u'groupme_index')
