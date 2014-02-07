@@ -28,6 +28,7 @@ function groupme_me_callback() {
     var p = document.createElement("p");
     p.innerHTML = "Email notifications will be sent to ";
     p.appendChild(a);
+    p.innerHTML = p.innerHTML + ".";
 
     var div = document.getElementById("main_content");
     div.appendChild(p);
