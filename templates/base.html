@@ -9,12 +9,11 @@
         <div class="container">
             <div class="row">
                 <div id="main_content" class="col-md-8">
-                    <h1>Hello, <span id="groupme_username">GroupMe User</span>. <a class="btn btn-danger pull-right" href="{{ url_for('groupme_logout') }}">Log out</a></h1>
-                    <p id="group_p" class="lead">Loading...</p>
-                    <div id="group_list" class="list-group"></div>
+                    <h1>{% block header %}{% endblock %}</h1>
+                    {% block content %}{% endblock %}
                 </div>
             </div>
         </div>
-        <script type="text/javascript" src="{{ url_for('static', filename='groupme_list.js') }}"></script>
+        {% block script %}{% endblock %}
     </body>
 </html>

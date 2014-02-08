@@ -6,6 +6,13 @@ import os
 import postmark
 import psycopg2
 import requests
+import stripe
+
+stripe_keys = {
+    u'publishable_key': os.environ.get(u'STRIPE_PUBLISHABLE_KEY'),
+    u'secret_key': os.environ.get(u'STRIPE_SECRET_KEY')
+}
+stripe.api_key = stripe_keys.get(u'secret_key')
 
 app = flask.Flask(__name__)
 app.debug = True
@@ -62,7 +69,7 @@ class User(db.Model):
         self.user_id = user_id
         self.token = token
         if expiration is None:
-            expiration = datetime.datetime.utcnow() + datetime.timedelta(7)
+            expiration = datetime.datetime.utcnow() + datetime.timedelta(30)
         self.expiration = expiration
 
     def __repr__(self):
@@ -86,9 +93,9 @@ class User(db.Model):
 @app.route(u'/groupme')
 def groupme_index():
     if u'groupme_token' in flask.request.cookies:
-        return flask.render_template(u'groupme_list.html')
+        return flask.render_template(u'list.html')
 
-    return flask.render_template(u'groupme_index.html', cid=GM_CID)
+    return flask.render_template(u'index.html', cid=GM_CID)
 
 @app.route(u'/groupme/auth')
 def groupme_auth():
@@ -164,6 +171,41 @@ def groupme_unsubscribe(group_id):
                 d = gm.destroy_bot(bot.get(u'bot_id'))
 
     return flask.redirect(flask.url_for(u'groupme_index'))
+
+@app.route(u'/groupme/payment')
+def groupme_payment():
+    if u'groupme_token' in flask.request.cookies:
+        token = flask.request.cookies.get(u'groupme_token')
+    else:
+        return flask.redirect(flask.url_for(u'groupme_index'))
+
+    gm = GroupMeClient(token)
+    gm_user = gm.me()
+    user = gm_user.get(u'response')
+
+    key = stripe_keys.get(u'publishable_key')
+    return flask.render_template(u'payment.html', key=key, user=user)
+
+@app.route(u'/groupme/charge', methods=[u'POST'])
+def groupme_charge():
+    if u'groupme_token' in flask.request.cookies:
+        token = flask.request.cookies.get(u'groupme_token')
+    else:
+        return flask.redirect(flask.url_for(u'groupme_index'))
+
+    amount = 600
+
+    gm = GroupMeClient(token)
+    gm_user = gm.me()
+    user = gm_user.get(u'response')
+
+    card = flask.request.form.get(u'stripeToken')
+    customer = stripe.Customer.create(email=user.get(u'email'), card=card)
+    charge = stripe.Charge.create(
+        customer=customer.id,
+        amount=amount, currency=u'usd', description=u'GroupMemail Service: 6 months')
+
+    return flask.render_template(u'charge.html', user=user)
 
 def build_email_body(j):
     if j.get(u'text') is None:

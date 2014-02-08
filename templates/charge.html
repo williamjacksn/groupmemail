@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+
+{% block header %}Hello, {{ user.name }}. <a class="btn btn-danger pull-right" href="{{ url_for('groupme_logout') }}">Log out</a>{% endblock %}
+
+{% block content %}
+    <p>Thanks!</p>
+{% endblock %}

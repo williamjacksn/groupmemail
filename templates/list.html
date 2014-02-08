@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block header %}Hello, <span id="groupme_username">GroupMe User</span>. <a class="btn btn-danger pull-right" href="{{ url_for('groupme_logout') }}">Log out</a>{% endblock %}
+
+{% block content %}
+    <p id="group_p" class="lead">Loading...</p>
+    <div id="group_list" class="list-group"></div>
+{% endblock %}
+
+{% block script %}
+    <script type="text/javascript" src="{{ url_for('static', filename='list.js') }}"></script>
+{% endblock %}
