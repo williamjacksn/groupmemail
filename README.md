@@ -1,1 +1,1 @@
-Some homegrown web services that make my life easier
+Email notifications for GroupMe. http://services.subtlecoolness.com/groupme
