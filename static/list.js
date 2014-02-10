@@ -17,23 +17,6 @@ function add_class(element, class_name) {
     element.className = current_classes.join(" ").trim();
 }
 
-function groupme_me_callback() {
-    var resp = JSON.parse(this.responseText).response;
-
-    document.getElementById("groupme_username").textContent = resp.name;
-
-    var a = document.createElement("a");
-    a.innerHTML = resp.email;
-
-    var p = document.createElement("p");
-    p.innerHTML = "Email notifications will be sent to ";
-    p.appendChild(a);
-    p.innerHTML = p.innerHTML + ".";
-
-    var div = document.getElementById("main_content");
-    div.appendChild(p);
-}
-
 function groupme_groups_callback() {
     var resp = JSON.parse(this.responseText).response;
 
@@ -89,12 +72,6 @@ function mark_subscribed(group_id) {
 }
 
 function startup() {
-    var xhr_me = new XMLHttpRequest();
-    xhr_me.onload = groupme_me_callback;
-    var me_url = api_url_base + "users/me?token=" + token;
-    xhr_me.open("get", me_url);
-    xhr_me.send();
-
     var xhr_groups = new XMLHttpRequest();
     xhr_groups.onload = groupme_groups_callback;
     var groups_url = api_url_base + "groups?token=" + token;

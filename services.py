@@ -93,9 +93,24 @@ class User(db.Model):
 @app.route(u'/groupme')
 def groupme_index():
     if u'groupme_token' in flask.request.cookies:
-        return flask.render_template(u'list.html')
+        token = flask.request.cookies.get(u'groupme_token')
+    else:
+        return flask.render_template(u'index.html', cid=GM_CID)
 
-    return flask.render_template(u'index.html', cid=GM_CID)
+    gm = GroupMeClient(token)
+    gm_user = gm.me()
+    user = gm_user.get(u'response')
+    db_user = User.query.get(user.get(u'user_id'))
+    if db_user is None:
+        msg = u'Subscribe to a group to get free service for 30 days.'
+    else:
+        if db_user.expiration < datetime.datetime.utcnow():
+            msg = u'Your GroupMemail services expired on {}.'
+        else:
+            msg = u'Your GroupMemail service will expire on {}.'
+        msg = msg.format(db_user.expiration.strftime(u'%d %B %Y'))
+    user[u'expiration_msg'] = msg
+    return flask.render_template(u'list.html', user=user)
 
 @app.route(u'/groupme/auth')
 def groupme_auth():
@@ -182,6 +197,16 @@ def groupme_payment():
     gm = GroupMeClient(token)
     gm_user = gm.me()
     user = gm_user.get(u'response')
+    db_user = User.query.get(user.get(u'user_id'))
+    if db_user is None:
+        msg = u'Subscribe to a group to get free service for 30 days.'
+    else:
+        if db_user.expiration < datetime.datetime.utcnow():
+            msg = u'Your GroupMemail service expired on {}.'
+        else:
+            msg = u'Your GroupMemail service will expire on {}.'
+        msg = msg.format(db_user.expiration.strftime(u'%d %B %Y'))
+    user[u'expiration_msg'] = msg
 
     key = stripe_keys.get(u'publishable_key')
     return flask.render_template(u'payment.html', key=key, user=user)
@@ -201,11 +226,23 @@ def groupme_charge():
 
     card = flask.request.form.get(u'stripeToken')
     customer = stripe.Customer.create(email=user.get(u'email'), card=card)
-    charge = stripe.Charge.create(
-        customer=customer.id,
-        amount=amount, currency=u'usd', description=u'GroupMemail Service: 6 months')
 
-    return flask.render_template(u'charge.html', user=user)
+    try:
+        charge = stripe.Charge.create(
+            customer=customer.id,
+            amount=amount,
+            currency=u'usd',
+            description=u'GroupMemail Service: 6 months'
+        )
+    except stripe.CardError as e:
+        return flask.render_template(u'error.html', user=user)
+
+    db_user = User.query.get(user.get(u'user_id'))
+    db_user.expiration = db_user.expiration + datetime.timedelta(180)
+    db.session.add(db_user)
+    db.session.commit()
+
+    return flask.redirect(flask.url_for(u'groupme_index'))
 
 def build_email_body(j):
     if j.get(u'text') is None:

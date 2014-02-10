@@ -3,9 +3,10 @@
 {% block header %}Hello, {{ user.name }}. <a class="btn btn-danger pull-right" href="{{ url_for('groupme_logout') }}">Log out</a>{% endblock %}
 
 {% block content %}
-    <p class="lead">Continued use of the GroupMemail service is $1/month.</p>
-    <p>You can use a credit card to purchase credit in 6 month intervals. Your service will not automatically renew, but you will be reminded via email when your service is nearing expiration.</p>
+    <p class="lead">Use of the GroupMemail service costs $1/month.</p>
+    <p>You can use a credit card to purchase 6 months (180 days) of credit at a time. Your service will not automatically renew, but you will be reminded via email when your service is nearing expiration.</p>
+    <p>{{ user.expiration_msg }}</p>
     <div><form action="{{ url_for('groupme_charge') }}" method="post">
-        <script src="https://checkout.stripe.com/checkout.js" class="stripe-button" data-key="{{ key }}" data-email="{{ user.email }}" data-name="GroupMemail Service" data-description="$6 for 6 months" data-amount="600"></script>
+        <script src="https://checkout.stripe.com/checkout.js" class="stripe-button" data-key="{{ key }}" data-email="{{ user.email }}" data-name="GroupMemail" data-description="$6 for 6 months" data-amount="600" data-label="Pay with card"></script>
     </form></div>
 {% endblock %}

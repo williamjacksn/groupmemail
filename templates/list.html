@@ -1,10 +1,12 @@
 {% extends 'base.html' %}
 
-{% block header %}Hello, <span id="groupme_username">GroupMe User</span>. <a class="btn btn-danger pull-right" href="{{ url_for('groupme_logout') }}">Log out</a>{% endblock %}
+{% block header %}Hello, {{ user.name }}. <a class="btn btn-danger pull-right" href="{{ url_for('groupme_logout') }}">Log out</a>{% endblock %}
 
 {% block content %}
     <p id="group_p" class="lead">Loading...</p>
     <div id="group_list" class="list-group"></div>
+    <p>Email notifications will be sent to <a>{{ user.email }}</a>.</p>
+    <p>{{ user.expiration_msg }} <a href="{{ url_for('groupme_payment') }}">Extend your service.</a></p>
 {% endblock %}
 
 {% block script %}
