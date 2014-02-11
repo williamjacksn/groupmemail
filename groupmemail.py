@@ -112,25 +112,9 @@ def index():
     user[u'expiration_msg'] = msg
     return flask.render_template(u'list.html', user=user)
 
-@app.route(u'/groupme')
-def groupme_index():
-    # Deprecated
-    return flask.redirect(flask.url_for(u'index'))
-
-@app.route(u'/groupme/auth')
-def groupme_auth():
-    if u'access_token' in flask.request.args:
-        token = flask.request.args.get(u'access_token')
-        url = flask.url_for(u'groupme_login', access_token=token)
-        url = u'{}{}'.format(os.environ.get(u'BASE_URL'), url)
-        return flask.redirect(url)
-
-    return flask.redirect(flask.url_for(u'index'))
-
-@app.route(u'/groupme/login')
-def groupme_login():
-    index_url = flask.url_for(u'index')
-    resp = flask.make_response(flask.redirect(index_url))
+@app.route(u'/login')
+def login():
+    resp = flask.make_response(flask.redirect(flask.url_for(u'index')))
 
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
@@ -141,6 +125,16 @@ def groupme_login():
         resp.set_cookie(u'groupme_token', token)
 
     return resp
+
+@app.route(u'/groupme/auth')
+def groupme_auth():
+    if u'access_token' in flask.request.args:
+        token = flask.request.args.get(u'access_token')
+        url = flask.url_for(u'login', access_token=token)
+        url = u'{}{}'.format(os.environ.get(u'BASE_URL'), url)
+        return flask.redirect(url)
+
+    return flask.redirect(flask.url_for(u'index'))
 
 @app.route(u'/groupme/logout')
 def groupme_logout():
@@ -293,6 +287,17 @@ def groupme_incoming(user_id):
     )
     m.send(test=False)
     return u'Thank you.'
+
+@app.route(u'/groupme')
+def groupme_index():
+    # Deprecated
+    return flask.redirect(flask.url_for(u'index'))
+
+@app.route(u'/groupme/login')
+def groupme_login():
+    # Deprecated
+    return flask.redirect(flask.url_for(u'login', **flask.request.args))
+
 
 if __name__ == u'__main__':
     app.run(debug=True, host=u'0.0.0.0')

@@ -1,6 +1,4 @@
-{% extends 'base.html' %}
-
-{% block header %}Hello, {{ user.name }}. <a class="btn btn-danger pull-right" href="{{ url_for('groupme_logout') }}">Log out</a>{% endblock %}
+{% extends 'logged_in.html' %}
 
 {% block content %}
     <p class="lead">Use of the GroupMemail service costs $1/month.</p>
