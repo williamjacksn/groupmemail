@@ -126,6 +126,12 @@ def login():
 
     return resp
 
+@app.route(u'/logout')
+def logout():
+    resp = flask.make_response(flask.redirect(flask.url_for(u'index')))
+    resp.delete_cookie(u'groupme_token')
+    return resp
+
 @app.route(u'/groupme/auth')
 def groupme_auth():
     if u'access_token' in flask.request.args:
@@ -135,13 +141,6 @@ def groupme_auth():
         return flask.redirect(url)
 
     return flask.redirect(flask.url_for(u'index'))
-
-@app.route(u'/groupme/logout')
-def groupme_logout():
-    index_url = flask.url_for(u'index')
-    resp = flask.make_response(flask.redirect(index_url))
-    resp.delete_cookie(u'groupme_token')
-    return resp
 
 @app.route(u'/groupme/subscribe/<int:group_id>')
 def groupme_subscribe(group_id):
@@ -297,6 +296,10 @@ def groupme_index():
 def groupme_login():
     # Deprecated
     return flask.redirect(flask.url_for(u'login', **flask.request.args))
+
+@app.route(u'/groupme/logout')
+def groupme_logout():
+    return flask.redirect(flask.url_for(u'logout'))
 
 
 if __name__ == u'__main__':
