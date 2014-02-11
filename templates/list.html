@@ -4,7 +4,7 @@
     <p id="group_p" class="lead">Loading...</p>
     <div id="group_list" class="list-group"></div>
     <p>Email notifications will be sent to <a>{{ user.email }}</a>.</p>
-    <p>{{ user.expiration_msg }} <a href="{{ url_for('groupme_payment') }}">Extend your service.</a></p>
+    <p>{{ user.expiration_msg }} <a href="{{ url_for('payment') }}">Extend your service.</a></p>
 {% endblock %}
 
 {% block script %}

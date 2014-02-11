@@ -185,8 +185,8 @@ def groupme_unsubscribe(group_id):
 
     return flask.redirect(flask.url_for(u'index'))
 
-@app.route(u'/groupme/payment')
-def groupme_payment():
+@app.route(u'/payment')
+def payment():
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
     else:
@@ -301,6 +301,9 @@ def groupme_login():
 def groupme_logout():
     return flask.redirect(flask.url_for(u'logout'))
 
+@app.route(u'/groupme/payment')
+def groupme_payment():
+    return flask.redirect(flask.url_for(u'payment'))
 
 if __name__ == u'__main__':
     app.run(debug=True, host=u'0.0.0.0')
