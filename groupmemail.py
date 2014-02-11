@@ -90,12 +90,12 @@ class User(db.Model):
             u'expiration': self.expiration
         }
 
-@app.route(u'/groupme')
-def groupme_index():
+@app.route(u'/')
+def index():
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
     else:
-        return flask.render_template(u'index.html', cid=GM_CID)
+        return flask.render_template(u'landing.html', cid=GM_CID)
 
     gm = GroupMeClient(token)
     gm_user = gm.me()
@@ -105,12 +105,17 @@ def groupme_index():
         msg = u'Subscribe to a group to get free service for 30 days.'
     else:
         if db_user.expiration < datetime.datetime.utcnow():
-            msg = u'Your GroupMemail services expired on {}.'
+            msg = u'Your GroupMemail service expired on {}.'
         else:
             msg = u'Your GroupMemail service will expire on {}.'
         msg = msg.format(db_user.expiration.strftime(u'%d %B %Y'))
     user[u'expiration_msg'] = msg
     return flask.render_template(u'list.html', user=user)
+
+@app.route(u'/groupme')
+def groupme_index():
+    # Deprecated
+    return flask.redirect(flask.url_for(u'index'))
 
 @app.route(u'/groupme/auth')
 def groupme_auth():
@@ -120,11 +125,11 @@ def groupme_auth():
         url = u'{}{}'.format(os.environ.get(u'BASE_URL'), url)
         return flask.redirect(url)
 
-    return flask.redirect(flask.url_for(u'groupme_index'))
+    return flask.redirect(flask.url_for(u'index'))
 
 @app.route(u'/groupme/login')
 def groupme_login():
-    index_url = flask.url_for(u'groupme_index')
+    index_url = flask.url_for(u'index')
     resp = flask.make_response(flask.redirect(index_url))
 
     if u'groupme_token' in flask.request.cookies:
@@ -139,7 +144,7 @@ def groupme_login():
 
 @app.route(u'/groupme/logout')
 def groupme_logout():
-    index_url = flask.url_for(u'groupme_index')
+    index_url = flask.url_for(u'index')
     resp = flask.make_response(flask.redirect(index_url))
     resp.delete_cookie(u'groupme_token')
     return resp
@@ -149,7 +154,7 @@ def groupme_subscribe(group_id):
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
     else:
-        return flask.redirect(flask.url_for(u'groupme_index'))
+        return flask.redirect(flask.url_for(u'index'))
 
     gm = GroupMeClient(token)
     gm_user = gm.me()
@@ -164,14 +169,14 @@ def groupme_subscribe(group_id):
     url = flask.url_for(u'groupme_incoming', user_id=user_id, _external=True)
     gm.create_bot(u'Subtle Coolness Services', group_id, url)
 
-    return flask.redirect(flask.url_for(u'groupme_index'))
+    return flask.redirect(flask.url_for(u'index'))
 
 @app.route(u'/groupme/unsubscribe/<int:group_id>')
 def groupme_unsubscribe(group_id):
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
     else:
-        return flask.redirect(flask.url_for(u'groupme_index'))
+        return flask.redirect(flask.url_for(u'index'))
 
     gm = GroupMeClient(token)
     gm_user = gm.me()
@@ -185,14 +190,14 @@ def groupme_unsubscribe(group_id):
             if url in bot.get(u'callback_url'):
                 d = gm.destroy_bot(bot.get(u'bot_id'))
 
-    return flask.redirect(flask.url_for(u'groupme_index'))
+    return flask.redirect(flask.url_for(u'index'))
 
 @app.route(u'/groupme/payment')
 def groupme_payment():
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
     else:
-        return flask.redirect(flask.url_for(u'groupme_index'))
+        return flask.redirect(flask.url_for(u'index'))
 
     gm = GroupMeClient(token)
     gm_user = gm.me()
@@ -216,7 +221,7 @@ def groupme_charge():
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
     else:
-        return flask.redirect(flask.url_for(u'groupme_index'))
+        return flask.redirect(flask.url_for(u'index'))
 
     amount = 600
 
@@ -242,7 +247,7 @@ def groupme_charge():
     db.session.add(db_user)
     db.session.commit()
 
-    return flask.redirect(flask.url_for(u'groupme_index'))
+    return flask.redirect(flask.url_for(u'index'))
 
 def build_email_body(j):
     if j.get(u'text') is None:
