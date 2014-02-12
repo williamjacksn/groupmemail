@@ -118,7 +118,7 @@ def index():
 
 @app.route(u'/login')
 def login():
-    resp = flask.make_response(flask.redirect(flask.url_for(u'index')))
+    resp = flask.make_response(flask.redirect(external_url(u'index')))
 
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
