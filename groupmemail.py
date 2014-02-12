@@ -142,8 +142,8 @@ def groupme_auth():
 
     return flask.redirect(flask.url_for(u'index'))
 
-@app.route(u'/groupme/subscribe/<int:group_id>')
-def groupme_subscribe(group_id):
+@app.route(u'/subscribe/<int:group_id>')
+def subscribe(group_id):
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
     else:
@@ -153,10 +153,10 @@ def groupme_subscribe(group_id):
     gm_user = gm.me()
     user_id = gm_user.get(u'response').get(u'id')
 
-    user = User.query.get(user_id)
-    if user is None:
-        user = User(user_id, token)
-        db.session.add(user)
+    db_user = User.query.get(user_id)
+    if db_user is None:
+        db_user = User(user_id, token)
+        db.session.add(db_user)
         db.session.commit()
 
     url = flask.url_for(u'groupme_incoming', user_id=user_id, _external=True)
@@ -164,8 +164,8 @@ def groupme_subscribe(group_id):
 
     return flask.redirect(flask.url_for(u'index'))
 
-@app.route(u'/groupme/unsubscribe/<int:group_id>')
-def groupme_unsubscribe(group_id):
+@app.route(u'/unsubscribe/<int:group_id>')
+def unsubscribe(group_id):
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
     else:

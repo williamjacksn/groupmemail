@@ -33,7 +33,7 @@ function groupme_groups_callback() {
 
         var a = document.createElement("a");
         a.setAttribute("id", group.group_id);
-        a.setAttribute("href", "/groupme/subscribe/" + group.group_id);
+        a.setAttribute("href", "/subscribe/" + group.group_id);
         a.innerHTML = group.name + " ";
         add_class(a, "list-group-item");
 
@@ -66,7 +66,7 @@ function groupme_bots_callback() {
 
 function mark_subscribed(group_id) {
     var group_el = document.getElementById(group_id);
-    group_el.setAttribute("href", "/groupme/unsubscribe/" + group_id);
+    group_el.setAttribute("href", "/unsubscribe/" + group_id);
     group_el.lastChild.innerHTML = "Subscribed ✓";
     add_class(group_el, "list-group-item-success");
 }
