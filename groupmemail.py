@@ -136,16 +136,6 @@ def logout():
     resp.delete_cookie(u'groupme_token')
     return resp
 
-@app.route(u'/groupme/auth')
-def groupme_auth():
-    if u'access_token' in flask.request.args:
-        token = flask.request.args.get(u'access_token')
-        url = flask.url_for(u'login', access_token=token)
-        url = u'{}{}'.format(os.environ.get(u'BASE_URL'), url)
-        return flask.redirect(url)
-
-    return flask.redirect(flask.url_for(u'index'))
-
 @app.route(u'/subscribe/<int:group_id>')
 def subscribe(group_id):
     if u'groupme_token' in flask.request.cookies:
