@@ -141,7 +141,7 @@ def subscribe(group_id):
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
     else:
-        return flask.redirect(flask.url_for(u'index'))
+        return flask.redirect(flask.external_url(u'index'))
 
     gm = GroupMeClient(token)
     gm_user = gm.me()
@@ -163,7 +163,7 @@ def unsubscribe(group_id):
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
     else:
-        return flask.redirect(flask.url_for(u'index'))
+        return flask.redirect(flask.external_url(u'index'))
 
     gm = GroupMeClient(token)
     gm_user = gm.me()
@@ -184,7 +184,7 @@ def payment():
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
     else:
-        return flask.redirect(flask.url_for(u'index'))
+        return flask.redirect(flask.external_url(u'index'))
 
     gm = GroupMeClient(token)
     gm_user = gm.me()
@@ -208,7 +208,7 @@ def charge():
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
     else:
-        return flask.redirect(flask.url_for(u'index'))
+        return flask.redirect(flask.external_url(u'index'))
 
     amount = 600
 
@@ -227,14 +227,14 @@ def charge():
             description=u'GroupMemail Service: 6 months'
         )
     except stripe.CardError as e:
-        return flask.redirect(flask.url_for(u'index'))
+        return flask.redirect(flask.external_url(u'index'))
 
     db_user = User.query.get(user.get(u'user_id'))
     db_user.expiration = db_user.expiration + datetime.timedelta(180)
     db.session.add(db_user)
     db.session.commit()
 
-    return flask.redirect(flask.url_for(u'index'))
+    return flask.redirect(flask.external_url(u'index'))
 
 def build_email_body(j):
     if j.get(u'text') is None:
