@@ -132,7 +132,7 @@ def login():
 
 @app.route(u'/logout')
 def logout():
-    resp = flask.make_response(flask.redirect(flask.url_for(u'index')))
+    resp = flask.make_response(flask.redirect(external_url(u'index')))
     resp.delete_cookie(u'groupme_token')
     return resp
 
