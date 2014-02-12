@@ -209,8 +209,8 @@ def payment():
     key = stripe_keys.get(u'publishable_key')
     return flask.render_template(u'payment.html', key=key, user=user)
 
-@app.route(u'/groupme/charge', methods=[u'POST'])
-def groupme_charge():
+@app.route(u'/charge', methods=[u'POST'])
+def charge():
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
     else:
@@ -233,7 +233,7 @@ def groupme_charge():
             description=u'GroupMemail Service: 6 months'
         )
     except stripe.CardError as e:
-        return flask.render_template(u'error.html', user=user)
+        return flask.redirect(flask.url_for(u'index'))
 
     db_user = User.query.get(user.get(u'user_id'))
     db_user.expiration = db_user.expiration + datetime.timedelta(180)
@@ -304,6 +304,7 @@ def groupme_logout():
 @app.route(u'/groupme/payment')
 def groupme_payment():
     return flask.redirect(flask.url_for(u'payment'))
+
 
 if __name__ == u'__main__':
     app.run(debug=True, host=u'0.0.0.0')
