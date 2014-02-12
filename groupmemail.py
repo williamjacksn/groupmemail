@@ -166,7 +166,7 @@ def subscribe(group_id):
     url = external_url(u'groupme_incoming', user_id=user_id)
     gm.create_bot(u'Subtle Coolness Services', group_id, url)
 
-    return flask.redirect(flask.url_for(u'index'))
+    return flask.redirect(external_url(u'index'))
 
 @app.route(u'/unsubscribe/<int:group_id>')
 def unsubscribe(group_id):
@@ -187,7 +187,7 @@ def unsubscribe(group_id):
             if url in bot.get(u'callback_url'):
                 d = gm.destroy_bot(bot.get(u'bot_id'))
 
-    return flask.redirect(flask.url_for(u'index'))
+    return flask.redirect(external_url(u'index'))
 
 @app.route(u'/payment')
 def payment():
