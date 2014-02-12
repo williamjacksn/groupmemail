@@ -287,24 +287,5 @@ def groupme_incoming(user_id):
     m.send(test=False)
     return u'Thank you.'
 
-@app.route(u'/groupme')
-def groupme_index():
-    # Deprecated
-    return flask.redirect(flask.url_for(u'index'))
-
-@app.route(u'/groupme/login')
-def groupme_login():
-    # Deprecated
-    return flask.redirect(flask.url_for(u'login', **flask.request.args))
-
-@app.route(u'/groupme/logout')
-def groupme_logout():
-    return flask.redirect(flask.url_for(u'logout'))
-
-@app.route(u'/groupme/payment')
-def groupme_payment():
-    return flask.redirect(flask.url_for(u'payment'))
-
-
 if __name__ == u'__main__':
     app.run(debug=True, host=u'0.0.0.0')
