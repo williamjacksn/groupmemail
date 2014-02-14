@@ -282,11 +282,6 @@ def incoming(user_id):
         app.logger.error(u'{} is not a known user_id'.format(user_id))
         flask.abort(404)
 
-    if user.expired:
-        err = u'user_id {} expired on {}'.format(user_id, user.expiration)
-        app.logger.error(err)
-        return u'', 204
-
     j = flask.request.get_json()
     app.logger.debug(j)
     for field in [u'name', u'text', u'group_id', u'attachments']:
@@ -296,6 +291,16 @@ def incoming(user_id):
             flask.abort(500)
 
     gm = GroupMeClient(user.token)
+
+    if user.expired:
+        err = u'user_id {} expired on {}'.format(user_id, user.expiration)
+        app.logger.error(err)
+        url = flask.url_for(u'incoming', user_id=user_id)
+        for bot in gm.bots():
+            if int(bot.get(u'group_id')) == int(j.get(u'group_id')):
+                if url in bot.get(u'callback_url'):
+                    d = gm.destroy_bot(bot.get(u'bot_id'))
+        return u'', 204
 
     gm_group = gm.group_info(j.get(u'group_id'))
     group_name = gm_group.get(u'response').get(u'name')
