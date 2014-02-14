@@ -53,6 +53,20 @@ class GroupMeClient(object):
         bot = {u'bot': bot_def}
         data = json.dumps(bot)
         r = requests.post(url, params=self.params, data=data)
+        return r.json()
+
+    def update_bot(self, bot_id, name, group_id, callback_url):
+        url = u'https://api.groupme.com/v3/bots/{}'.format(bot_id)
+        bot_def = {
+            u'bot_id': bot_id,
+            u'name': name,
+            u'group_id': group_id,
+            u'callback_url': callback_url
+        }
+        bot = {u'bot': bot_def}
+        data = json.dumps(bot)
+        r = requests.post(url, params=self.params, data=data)
+        return r
 
     def destroy_bot(self, bot_id):
         url = u'https://api.groupme.com/v3/bots/destroy'
@@ -164,8 +178,8 @@ def subscribe(group_id):
         db.session.add(db_user)
         db.session.commit()
 
-    url = external_url(u'groupme_incoming', user_id=user_id)
-    gm.create_bot(u'Subtle Coolness Services', group_id, url)
+    url = external_url(u'incoming', user_id=user_id)
+    gm.create_bot(u'GroupMemail', group_id, url)
 
     return flask.redirect(external_url(u'index'))
 
@@ -180,7 +194,7 @@ def unsubscribe(group_id):
     gm_user = gm.me()
     user_id = gm_user.get(u'response').get(u'id')
 
-    url = flask.url_for(u'groupme_incoming', user_id=user_id)
+    url = flask.url_for(u'incoming', user_id=user_id)
 
     bots = gm.bots()
     for bot in bots.get(u'response'):
@@ -265,7 +279,8 @@ def build_email_body(j):
     return email_body
 
 @app.route(u'/groupme/incoming/<int:user_id>', methods=[u'POST'])
-def groupme_incoming(user_id):
+@app.route(u'/incoming/<int:user_id>', methods=[u'POST'])
+def incoming(user_id):
     user = User.query.get(user_id)
     if user is None:
         app.logger.error(u'{} is not a known user_id'.format(user_id))

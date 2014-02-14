@@ -58,7 +58,7 @@ function groupme_bots_callback() {
 
     for (i = 0; i < resp.length; i++) {
         var bot = resp[i];
-        if (bot.callback_url.indexOf("/groupme/incoming/") > -1) {
+        if (bot.callback_url.indexOf("/incoming/") > -1) {
             mark_subscribed(bot.group_id);
         }
     }
