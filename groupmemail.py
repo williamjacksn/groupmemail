@@ -274,7 +274,8 @@ def build_email_body(j):
             img_tag = u'<img src="{url}" />'.format(**attachment)
             email_body = u'{}\n\n<p>{}</p>'.format(email_body, img_tag)
 
-    a_tag = u'<a href="https://app.groupme.com/chats">Go to GroupMe</a>'
+    url = u'https://app.groupme.com/chats/{group_id}'.format(**j)
+    a_tag = u'<a href="{}">Go to {}</a>'.format(url, j.get(u'group_name'))
     email_body = u'{}\n\n<p>{}</p>'.format(email_body, a_tag)
     return email_body
 
@@ -298,6 +299,7 @@ def incoming(user_id):
 
     gm_group = gm.group_info(j.get(u'group_id'))
     group_name = gm_group.get(u'response').get(u'name')
+    j[u'group_name'] = group_name
     html_body = build_email_body(j)
     m = postmark.PMMail(
         api_key=POSTMARK_API_KEY,
