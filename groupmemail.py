@@ -146,12 +146,10 @@ def login():
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
         resp.set_cookie(u'groupme_token', token)
-        flask.flash(u'You have successfully logged in.', u'success')
 
     if u'access_token' in flask.request.args:
         token = flask.request.args.get(u'access_token')
         resp.set_cookie(u'groupme_token', token)
-        flask.flash(u'You have successfully logged in.', u'success')
 
     return resp
 
@@ -252,7 +250,6 @@ def charge():
             description=u'GroupMemail Service: 6 months'
         )
     except stripe.CardError as e:
-        flask.flash(u'There was an error charging your card.', u'error')
         return flask.redirect(flask.external_url(u'index'))
 
     db_user = User.query.get(user.get(u'user_id'))
@@ -260,7 +257,6 @@ def charge():
     db.session.add(db_user)
     db.session.commit()
 
-    flask.flash(u'Your service has been extended.', u'success')
     return flask.redirect(flask.external_url(u'index'))
 
 def build_email_body(j):
