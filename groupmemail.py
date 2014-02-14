@@ -66,11 +66,10 @@ class User(db.Model):
     expiration = db.Column(db.DateTime, nullable=False)
     _email = None
 
-    def __init__(self, user_id, token, expiration=None):
+    def __init__(self, user_id, token):
         self.user_id = user_id
         self.token = token
-        if expiration is None:
-            expiration = datetime.datetime.utcnow() + datetime.timedelta(30)
+        expiration = datetime.datetime.utcnow() + datetime.timedelta(30)
         self.expiration = expiration
 
     def __repr__(self):
@@ -83,6 +82,16 @@ class User(db.Model):
             gm_user = gm.me()
             self._email = gm_user.get(u'response').get(u'email')
         return self._email
+
+    @property
+    def expired(self):
+        return self.expiration < datetime.datetime.utcnow()
+
+    def extend(self, days):
+        base = self.expiration
+        if self.expired:
+            base = datetime.datetime.utcnow()
+        self.expiration = base + datetime.timedelta(days)
 
     def to_dict(self):
         user = {
@@ -108,7 +117,7 @@ def index():
     if db_user is None:
         msg = u'Subscribe to a group to get free service for 30 days.'
     else:
-        if db_user.expiration < datetime.datetime.utcnow():
+        if db_user.expired:
             msg = u'Your GroupMemail service expired on {}.'
         else:
             msg = u'Your GroupMemail service will expire on {}.'
@@ -123,10 +132,12 @@ def login():
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
         resp.set_cookie(u'groupme_token', token)
+        flask.flash(u'You have successfully logged in.', u'success')
 
     if u'access_token' in flask.request.args:
         token = flask.request.args.get(u'access_token')
         resp.set_cookie(u'groupme_token', token)
+        flask.flash(u'You have successfully logged in.', u'success')
 
     return resp
 
@@ -193,7 +204,7 @@ def payment():
     if db_user is None:
         msg = u'Subscribe to a group to get free service for 30 days.'
     else:
-        if db_user.expiration < datetime.datetime.utcnow():
+        if db_user.expired:
             msg = u'Your GroupMemail service expired on {}.'
         else:
             msg = u'Your GroupMemail service will expire on {}.'
@@ -227,13 +238,15 @@ def charge():
             description=u'GroupMemail Service: 6 months'
         )
     except stripe.CardError as e:
+        flask.flash(u'There was an error charging your card.', u'error')
         return flask.redirect(flask.external_url(u'index'))
 
     db_user = User.query.get(user.get(u'user_id'))
-    db_user.expiration = db_user.expiration + datetime.timedelta(180)
+    db_user.extend(180)
     db.session.add(db_user)
     db.session.commit()
 
+    flask.flash(u'Your service has been extended.', u'success')
     return flask.redirect(flask.external_url(u'index'))
 
 def build_email_body(j):
