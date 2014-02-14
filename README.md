@@ -1,1 +1,1 @@
-Email notifications for GroupMe. http://services.subtlecoolness.com/groupme
+Email notifications for GroupMe. https://groupmemail.herokuapp.com
