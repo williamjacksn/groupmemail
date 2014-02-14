@@ -279,13 +279,17 @@ def build_email_body(j):
     email_body = u'{}\n\n<p>{}</p>'.format(email_body, a_tag)
     return email_body
 
-@app.route(u'/groupme/incoming/<int:user_id>', methods=[u'POST'])
 @app.route(u'/incoming/<int:user_id>', methods=[u'POST'])
 def incoming(user_id):
     user = User.query.get(user_id)
     if user is None:
         app.logger.error(u'{} is not a known user_id'.format(user_id))
         flask.abort(404)
+
+    if user.expired:
+        err = u'user_id {} expired on {}'.format(user_id, user.expiration)
+        app.logger.error(err)
+        return u'', 204
 
     j = flask.request.get_json()
     app.logger.debug(j)
