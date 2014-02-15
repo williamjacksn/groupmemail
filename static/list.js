@@ -22,9 +22,11 @@ function add_class(element, class_name) {
 function mark_subscribed(group_id) {
     "use strict";
     var group_el = document.getElementById(group_id);
-    group_el.setAttribute("href", "/unsubscribe/" + group_id);
-    group_el.lastChild.innerHTML = "Subscribed ✓";
-    add_class(group_el, "list-group-item-success");
+    if (group_el) {
+        group_el.setAttribute("href", "/unsubscribe/" + group_id);
+        group_el.lastChild.innerHTML = "Subscribed ✓";
+        add_class(group_el, "list-group-item-success");
+    }
 }
 
 function groupme_bots_callback() {
