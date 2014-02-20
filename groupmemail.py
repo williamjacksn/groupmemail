@@ -141,7 +141,8 @@ def index():
 
 @app.route(u'/login')
 def login():
-    resp = flask.make_response(flask.redirect(external_url(u'index')))
+    index_url = external_url(u'index')
+    resp = flask.make_response(flask.redirect(index_url, code=303))
 
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
@@ -155,7 +156,8 @@ def login():
 
 @app.route(u'/logout')
 def logout():
-    resp = flask.make_response(flask.redirect(external_url(u'index')))
+    index_url = external_url(u'index')
+    resp = flask.make_response(flask.redirect(index_url, code=303))
     resp.delete_cookie(u'groupme_token')
     return resp
 
@@ -164,7 +166,7 @@ def subscribe(group_id):
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
     else:
-        return flask.redirect(flask.external_url(u'index'))
+        return flask.redirect(flask.external_url(u'index'), code=303)
 
     gm = GroupMeClient(token)
     gm_user = gm.me()
@@ -179,14 +181,14 @@ def subscribe(group_id):
     url = external_url(u'incoming', user_id=user_id)
     gm.create_bot(u'GroupMemail', group_id, url)
 
-    return flask.redirect(external_url(u'index'))
+    return flask.redirect(external_url(u'index'), code=303)
 
 @app.route(u'/unsubscribe/<int:group_id>')
 def unsubscribe(group_id):
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
     else:
-        return flask.redirect(flask.external_url(u'index'))
+        return flask.redirect(flask.external_url(u'index'), code=303)
 
     gm = GroupMeClient(token)
     gm_user = gm.me()
@@ -200,14 +202,14 @@ def unsubscribe(group_id):
             if url in bot.get(u'callback_url'):
                 d = gm.destroy_bot(bot.get(u'bot_id'))
 
-    return flask.redirect(external_url(u'index'))
+    return flask.redirect(external_url(u'index'), code=303)
 
 @app.route(u'/payment')
 def payment():
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
     else:
-        return flask.redirect(flask.external_url(u'index'))
+        return flask.redirect(flask.external_url(u'index'), code=303)
 
     gm = GroupMeClient(token)
     gm_user = gm.me()
@@ -231,7 +233,7 @@ def charge():
     if u'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get(u'groupme_token')
     else:
-        return flask.redirect(flask.external_url(u'index'))
+        return flask.redirect(flask.external_url(u'index'), code=303)
 
     amount = 600
 
@@ -250,14 +252,14 @@ def charge():
             description=u'GroupMemail Service: 6 months'
         )
     except stripe.CardError as e:
-        return flask.redirect(flask.external_url(u'index'))
+        return flask.redirect(flask.external_url(u'index'), code=303)
 
     db_user = User.query.get(user.get(u'user_id'))
     db_user.extend(180)
     db.session.add(db_user)
     db.session.commit()
 
-    return flask.redirect(flask.external_url(u'index'))
+    return flask.redirect(flask.external_url(u'index'), code=303)
 
 def build_email_body(j):
     if j.get(u'text') is None:
