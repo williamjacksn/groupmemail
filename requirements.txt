@@ -1,12 +1,12 @@
 MarkupSafe==0.18
 itsdangerous==0.23
-Jinja2==2.7.1
+Jinja2==2.7.2
 Werkzeug==0.9.4
 Flask==0.10.1
 gunicorn==18.0
 python-postmark==0.3.2
-requests==2.0.1
-psycopg2==2.5.1
-SQLAlchemy==0.9.1
+requests==2.2.1
+psycopg2==2.5.2
+SQLAlchemy==0.9.3
 Flask-SQLAlchemy==1.0
 stripe==1.12.0
