@@ -5,8 +5,12 @@ VAGRANTFILE_API_VERSION = "2"
 provision_script = <<END_OF_LINE
 #!/usr/bin/env bash
 
-aptitude update
-aptitude --assume-yes install libpq-dev python-dev python-pip
+APTITUDE_UPDATED=/home/vagrant/.aptitude_updated
+if [[ ! -e ${APTITUDE_UPDATED} ]]; then
+    aptitude update && touch ${APTITUDE_UPDATED}
+fi
+
+aptitude --assume-yes install htop libpq-dev python-dev python-pip
 pip install --upgrade pip
 hash pip
 pip install -r /vagrant/requirements.txt
