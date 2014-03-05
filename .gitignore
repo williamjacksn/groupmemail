@@ -1,4 +1,5 @@
 .env
+.vagrant
 .venv
 *.pyc
 *.sublime-workspace

@@ -4,7 +4,6 @@ import flask.ext.sqlalchemy
 import json
 import os
 import postmark
-import psycopg2
 import requests
 import stripe
 
