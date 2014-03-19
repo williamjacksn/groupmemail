@@ -297,7 +297,7 @@ def incoming(user_id):
         err = u'user_id {} expired on {}'.format(user_id, user.expiration)
         app.logger.error(err)
         url = flask.url_for(u'incoming', user_id=user_id)
-        for bot in gm.bots():
+        for bot in gm.bots().get(u'response'):
             if int(bot.get(u'group_id')) == int(j.get(u'group_id')):
                 if url in bot.get(u'callback_url'):
                     d = gm.destroy_bot(bot.get(u'bot_id'))
