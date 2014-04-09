@@ -268,7 +268,8 @@ def build_email_body(j):
 
     for attachment in j.get(u'attachments'):
         if attachment.get(u'type') == u'image':
-            img_tag = u'<img src="{url}" />'.format(**attachment)
+            img_tmpl = u'<img style="max-width:99%" src="{url}" />'
+            img_tag = img_tmpl.format(**attachment)
             email_body = u'{}\n\n<p>{}</p>'.format(email_body, img_tag)
 
     url = u'https://app.groupme.com/chats/{group_id}'.format(**j)
