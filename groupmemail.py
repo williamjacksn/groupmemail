@@ -329,7 +329,7 @@ def handle_email():
     app.logger.debug(j)
 
     source = j.get(u'FromFull').get(u'Email')
-    destination = j.get(u'MailboxHash')
+    dest = j.get(u'MailboxHash')
     text = j.get(u'TextBody')
 
     user = User.query.filter_by(email=source).first()
@@ -340,7 +340,8 @@ def handle_email():
 
     message = text.splitlines()[0]
     gm = GroupMeClient(user.token)
-    r = gm.create_message(destination, message)
+    app.logger.debug(u'Posting message [{}] to {}'.format(message, dest))
+    r = gm.create_message(dest, message)
     app.logger.debug(r)
 
     return u'Thank you.'
