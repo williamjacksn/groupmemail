@@ -37,6 +37,13 @@ class GroupMeClient(object):
         r = requests.get(url, params=self.params)
         return r.json()
 
+    def create_message(self, group_id, text):
+        url = u'https://api.groupme.com/v3/groups/{}/messages'.format(group_id)
+        message = {u'message': {u'text': text}}
+        data = json.dumps(message)
+        r = requests.post(url, params=self.params, data=data)
+        return r.json()
+
     def bots(self):
         url = u'https://api.groupme.com/v3/bots'
         r = requests.get(url, params=self.params)
@@ -323,6 +330,17 @@ def handle_email():
 
     source = j.get(u'FromFull').get(u'Email')
     destination = j.get(u'MailboxHash')
+    text = j.get(u'TextBody')
+
+    user = User.query.filter_by(email=source).first()
+    if user is None:
+        err = u'Received mail from unknown address: {}'.format(source)
+        app.logger.error(err)
+        flask.abort(404)
+
+    message = text.splitlines()[0]
+    gm = GroupMeClient(user.token)
+    gm.create_message(destination, message)
 
     return u'Thank you.'
 
