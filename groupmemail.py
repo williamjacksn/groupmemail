@@ -41,7 +41,8 @@ class GroupMeClient(object):
         url = u'https://api.groupme.com/v3/groups/{}/messages'.format(group_id)
         message = {u'message': {u'text': text}}
         data = json.dumps(message)
-        r = requests.post(url, params=self.params, data=data)
+        headers = {u'content-type': u'application/json'}
+        r = requests.post(url, params=self.params, data=data, headers=headers)
         return r.json()
 
     def bots(self):
