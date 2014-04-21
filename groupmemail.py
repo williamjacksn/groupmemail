@@ -327,7 +327,6 @@ def incoming(user_id):
 @app.route(u'/email', methods=[u'POST'])
 def handle_email():
     j = flask.request.get_json()
-    app.logger.debug(j)
 
     source = j.get(u'FromFull').get(u'Email')
     dest = j.get(u'MailboxHash')
@@ -344,9 +343,7 @@ def handle_email():
     tokens = tokens[:empty_line_index]
     message = u' '.join(tokens)
     gm = GroupMeClient(user.token)
-    app.logger.debug(u'Posting message [{}] to {}'.format(message, dest))
     r = gm.create_message(dest, message)
-    app.logger.debug(r)
 
     return u'Thank you.'
 
