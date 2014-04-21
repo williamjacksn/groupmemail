@@ -339,8 +339,9 @@ def handle_email():
         flask.abort(404)
 
     tokens = text.splitlines()
-    empty_line_index = tokens.index(u'')
-    tokens = tokens[:empty_line_index]
+    if u'' in tokens:
+        empty_line_index = tokens.index(u'')
+        tokens = tokens[:empty_line_index]
     message = u' '.join(tokens)
     gm = GroupMeClient(user.token)
     r = gm.create_message(dest, message)
