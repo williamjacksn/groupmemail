@@ -274,9 +274,10 @@ def build_email_body(j):
             img_tag = img_tmpl.format(**attachment)
             email_body = u'{}\n\n<p>{}</p>'.format(email_body, img_tag)
 
+    footer = u'Reply to this email or <a href="{}">chat online</a>.'
     url = u'https://app.groupme.com/chats/{group_id}'.format(**j)
-    a_tag = u'<a href="{}">Go to {}</a>'.format(url, j.get(u'group_name'))
-    email_body = u'{}\n\n<p>{}</p>'.format(email_body, a_tag)
+    footer = footer.format(url)
+    email_body = u'{}\n\n<p>{}</p>'.format(email_body, footer)
     return email_body
 
 @app.route(u'/incoming/<int:user_id>', methods=[u'POST'])
@@ -308,7 +309,6 @@ def incoming(user_id):
 
     gm_group = gm.group_info(j.get(u'group_id'))
     group_name = gm_group.get(u'response').get(u'name')
-    j[u'group_name'] = group_name
     html_body = build_email_body(j)
     reply_to_tokens = list(EMAIL_SENDER.partition(u'@'))
     reply_to_tokens.insert(1, u'+{}'.format(j.get(u'group_id')))
