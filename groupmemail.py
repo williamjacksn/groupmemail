@@ -274,7 +274,7 @@ def build_email_body(j):
             img_tag = img_tmpl.format(**attachment)
             email_body = u'{}\n\n<p>{}</p>'.format(email_body, img_tag)
 
-    footer = u'Reply to this email or <a href="{}">chat online</a>.'
+    footer = u'-----<br>Reply to this email or <a href="{}">chat online</a>.'
     url = u'https://app.groupme.com/chats/{group_id}'.format(**j)
     footer = footer.format(url)
     email_body = u'{}\n\n<p>{}</p>'.format(email_body, footer)
