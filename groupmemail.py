@@ -340,7 +340,8 @@ def handle_email():
 
     message = text.splitlines()[0]
     gm = GroupMeClient(user.token)
-    gm.create_message(destination, message)
+    r = gm.create_message(destination, message)
+    app.logger.debug(r)
 
     return u'Thank you.'
 
