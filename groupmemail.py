@@ -77,24 +77,17 @@ class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.String, nullable=False)
     expiration = db.Column(db.DateTime, nullable=False)
-    _email = None
+    email = db.Column(db.String)
 
-    def __init__(self, user_id, token):
+    def __init__(self, user_id, token, email):
         self.user_id = user_id
         self.token = token
         expiration = datetime.datetime.utcnow() + datetime.timedelta(30)
         self.expiration = expiration
+        self.email = email
 
     def __repr__(self):
         return '<User {}>'.format(self.user_id)
-
-    @property
-    def email(self):
-        if self._email is None:
-            gm = GroupMeClient(self.token)
-            gm_user = gm.me()
-            self._email = gm_user.get(u'response').get(u'email')
-        return self._email
 
     @property
     def expired(self):
@@ -170,10 +163,11 @@ def subscribe(group_id):
     gm = GroupMeClient(token)
     gm_user = gm.me()
     user_id = gm_user.get(u'response').get(u'id')
+    email = gm_user.get(u'response').get(u'email')
 
     db_user = User.query.get(user_id)
     if db_user is None:
-        db_user = User(user_id, token)
+        db_user = User(user_id, token, email)
         db.session.add(db_user)
         db.session.commit()
 
@@ -326,6 +320,10 @@ def incoming(user_id):
 def handle_email():
     j = flask.request.get_json()
     app.logger.debug(j)
+
+    source = j.get(u'FromFull').get(u'Email')
+    destination = j.get(u'MailboxHash')
+
     return u'Thank you.'
 
 if __name__ == u'__main__':
