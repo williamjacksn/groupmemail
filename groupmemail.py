@@ -322,5 +322,11 @@ def incoming(user_id):
     m.send(test=False)
     return u'Thank you.'
 
+@app.route(u'/email', methods=[u'POST'])
+def handle_email():
+    j = flask.request.get_json()
+    app.logger.debug(j)
+    return u'Thank you.'
+
 if __name__ == u'__main__':
     app.run(debug=True, host=u'0.0.0.0')
