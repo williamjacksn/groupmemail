@@ -339,7 +339,10 @@ def handle_email():
         app.logger.error(err)
         flask.abort(404)
 
-    message = text.splitlines()[0]
+    tokens = text.splitlines()
+    empty_line_index = tokens.index(u'')
+    tokens = tokens[:empty_line_index]
+    message = u' '.join(tokens)
     gm = GroupMeClient(user.token)
     app.logger.debug(u'Posting message [{}] to {}'.format(message, dest))
     r = gm.create_message(dest, message)
