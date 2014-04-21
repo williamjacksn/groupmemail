@@ -308,10 +308,14 @@ def incoming(user_id):
     group_name = gm_group.get(u'response').get(u'name')
     j[u'group_name'] = group_name
     html_body = build_email_body(j)
+    reply_to_tokens = list(EMAIL_SENDER.partition(u'@'))
+    reply_to_tokens.insert(1, u'+{}'.format(j.get(u'group_id')))
+    reply_to = u''.join(reply_to_tokens)
     m = postmark.PMMail(
         api_key=POSTMARK_API_KEY,
         subject=u'New message in {}'.format(group_name),
         sender=EMAIL_SENDER,
+        reply_to=reply_to,
         to=user.email,
         html_body=html_body
     )
