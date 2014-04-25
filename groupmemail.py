@@ -1,9 +1,9 @@
 import datetime
 import flask
-import flask.ext.sqlalchemy
 import json
 import os
 import postmark
+import psycopg2
 import requests
 import stripe
 
@@ -15,8 +15,9 @@ stripe.api_key = stripe_keys.get(u'secret_key')
 
 app = flask.Flask(__name__)
 app.debug = True
-app.config[u'SQLALCHEMY_DATABASE_URI'] = os.environ.get(u'DB_URI')
-db = flask.ext.sqlalchemy.SQLAlchemy(app)
+
+db_conn = psycopg2.connect(os.environ.get(u'DB_URI'))
+db_conn.autocommit = True
 
 GM_CID = os.environ.get(u'GROUPME_CLIENT_ID')
 POSTMARK_API_KEY = os.environ.get(u'POSTMARK_API_KEY')
@@ -81,21 +82,55 @@ class GroupMeClient(object):
         r = requests.post(url, params=self.params, data=json.dumps(data))
         return r.status_code
 
-class User(db.Model):
-    user_id = db.Column(db.Integer, primary_key=True)
-    token = db.Column(db.String, nullable=False)
-    expiration = db.Column(db.DateTime, nullable=False)
-    email = db.Column(db.String)
+class User(object):
 
-    def __init__(self, user_id, token, email):
-        self.user_id = user_id
-        self.token = token
-        expiration = datetime.datetime.utcnow() + datetime.timedelta(30)
-        self.expiration = expiration
-        self.email = email
+    @classmethod
+    def create(cls, user_id, token, email):
+        u = cls()
+        u.user_id = user_id
+        u.token = token
+        u.expiration = datetime.datetime.utcnow() + datetime.timedelta(30)
+        u.email = email
+        sql = (u'insert into "user" (user_id, token, expiration, email) '
+            u'values (%s, %s, %s, %s)')
+        with db_conn.cursor() as cur:
+            db_conn.execute(sql, [user_id, token, u.expiration, email])
+        return u
+
+    @classmethod
+    def get_by_id(cls, user_id):
+        u = cls()
+        sql = (u'select user_id, token, expiration, email from "user" where '
+            u'user_id = %s')
+        with db_conn.cursor() as cur:
+            cur.execute(sql, [user_id])
+            r = cur.fetchone()
+        if r is None:
+            return None
+        u.user_id = int(r[0])
+        u.token = r[1].decode(u'utf-8')
+        u.expiration = r[2]
+        u.email = r[3].decode(u'utf-8')
+        return u
+
+    @classmethod
+    def get_by_email(cls, email):
+        u = cls()
+        sql = (u'select user_id, token, expiration, email from "user" where '
+            u'email = %s')
+        with db_conn.cursor() as cur:
+            cur.execute(sql, [email])
+            r = cur.fetchone()
+        if r is None:
+            return None
+        u.user_id = int(r[0])
+        u.token = r[1].decode(u'utf-8')
+        u.expiration = r[2]
+        u.email = r[3].decode(u'utf-8')
+        return u
 
     def __repr__(self):
-        return '<User {}>'.format(self.user_id)
+        return '<User {}>'.format(self.email)
 
     @property
     def expired(self):
@@ -106,13 +141,9 @@ class User(db.Model):
         if self.expired:
             base = datetime.datetime.utcnow()
         self.expiration = base + datetime.timedelta(days)
-
-    def to_dict(self):
-        user = {
-            u'id': self.user_id,
-            u'token': self.token,
-            u'expiration': self.expiration
-        }
+        sql = u'update "user" set expiration = %s where user_id = %s'
+        with db_conn.cursor() as cur:
+            cur.execute(sql, [self.expiration, self.user_id])
 
 def external_url(endpoint, **values):
     return flask.url_for(endpoint, _external=True, _scheme=SCHEME, **values)
@@ -127,7 +158,7 @@ def index():
     gm = GroupMeClient(token)
     gm_user = gm.me()
     user = gm_user.get(u'response')
-    db_user = User.query.get(user.get(u'user_id'))
+    db_user = User.get_by_id(user.get(u'user_id'))
     if db_user is None:
         msg = u'Subscribe to a group to get free service for 30 days.'
     else:
@@ -173,11 +204,9 @@ def subscribe(group_id):
     user_id = gm_user.get(u'response').get(u'id')
     email = gm_user.get(u'response').get(u'email')
 
-    db_user = User.query.get(user_id)
+    db_user = User.get_by_id(user_id)
     if db_user is None:
-        db_user = User(user_id, token, email)
-        db.session.add(db_user)
-        db.session.commit()
+        db_user = User.create(user_id, token, email)
 
     url = external_url(u'incoming', user_id=user_id)
     gm.create_bot(u'GroupMemail', group_id, url)
@@ -215,7 +244,7 @@ def payment():
     gm = GroupMeClient(token)
     gm_user = gm.me()
     user = gm_user.get(u'response')
-    db_user = User.query.get(user.get(u'user_id'))
+    db_user = User.get_by_id(user.get(u'user_id'))
     if db_user is None:
         msg = u'Subscribe to a group to get free service for 30 days.'
     else:
@@ -255,10 +284,8 @@ def charge():
     except stripe.CardError as e:
         return flask.redirect(flask.external_url(u'index'), code=303)
 
-    db_user = User.query.get(user.get(u'user_id'))
+    db_user = User.get_by_id(user.get(u'user_id'))
     db_user.extend(180)
-    db.session.add(db_user)
-    db.session.commit()
 
     return flask.redirect(flask.external_url(u'index'), code=303)
 
@@ -282,7 +309,7 @@ def build_email_body(j):
 
 @app.route(u'/incoming/<int:user_id>', methods=[u'POST'])
 def incoming(user_id):
-    user = User.query.get(user_id)
+    user = User.get_by_id(user_id)
     if user is None:
         app.logger.error(u'{} is not a known user_id'.format(user_id))
         flask.abort(404)
@@ -332,7 +359,7 @@ def handle_email():
     dest = j.get(u'MailboxHash')
     text = j.get(u'TextBody')
 
-    user = User.query.filter_by(email=source).first()
+    user = User.get_by_email(source)
     if user is None:
         err = u'Received mail from unknown address: {}'.format(source)
         app.logger.error(err)
