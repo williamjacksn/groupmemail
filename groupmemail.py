@@ -289,24 +289,6 @@ def charge():
 
     return flask.redirect(flask.external_url(u'index'), code=303)
 
-def build_email_body(j):
-    if j.get(u'text') is None:
-        email_body = u'<p>{name} posted a picture:</p>'.format(**j)
-    else:
-        email_body = u'<p>{name} said: {text}</p>'.format(**j)
-
-    for attachment in j.get(u'attachments'):
-        if attachment.get(u'type') == u'image':
-            img_tmpl = u'<img style="max-width:99%" src="{url}" />'
-            img_tag = img_tmpl.format(**attachment)
-            email_body = u'{}\n\n<p>{}</p>'.format(email_body, img_tag)
-
-    footer = u'-----<br>Reply to this email or <a href="{}">chat online</a>.'
-    url = u'https://app.groupme.com/chats/{group_id}'.format(**j)
-    footer = footer.format(url)
-    email_body = u'{}\n\n<p>{}</p>'.format(email_body, footer)
-    return email_body
-
 @app.route(u'/incoming/<int:user_id>', methods=[u'POST'])
 def incoming(user_id):
     user = User.get_by_id(user_id)
