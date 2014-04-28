@@ -95,13 +95,14 @@ class User(object):
             u'values (%s, %s, %s, %s)')
         with db_conn.cursor() as cur:
             db_conn.execute(sql, [user_id, token, u.expiration, email])
+        u.notified = False
         return u
 
     @classmethod
     def get_by_id(cls, user_id):
         u = cls()
-        sql = (u'select user_id, token, expiration, email from users where '
-            u'user_id = %s')
+        sql = (u'select user_id, token, expiration, email, notified from '
+            u'users where user_id = %s')
         with db_conn.cursor() as cur:
             cur.execute(sql, [user_id])
             r = cur.fetchone()
@@ -111,13 +112,14 @@ class User(object):
         u.token = r[1].decode(u'utf-8')
         u.expiration = r[2]
         u.email = r[3].decode(u'utf-8')
+        u.notified = bool(r[4])
         return u
 
     @classmethod
     def get_by_email(cls, email):
         u = cls()
-        sql = (u'select user_id, token, expiration, email from users where '
-            u'email = %s')
+        sql = (u'select user_id, token, expiration, email, notified from '
+            u'users where email = %s')
         with db_conn.cursor() as cur:
             cur.execute(sql, [email])
             r = cur.fetchone()
@@ -127,6 +129,7 @@ class User(object):
         u.token = r[1].decode(u'utf-8')
         u.expiration = r[2]
         u.email = r[3].decode(u'utf-8')
+        u.notified = bool(r[4])
         return u
 
     def __repr__(self):
@@ -140,10 +143,32 @@ class User(object):
         base = self.expiration
         if self.expired:
             base = datetime.datetime.utcnow()
+
         self.expiration = base + datetime.timedelta(days)
         sql = u'update users set expiration = %s where user_id = %s'
         with db_conn.cursor() as cur:
             cur.execute(sql, [self.expiration, self.user_id])
+
+        self.notified = False
+        sql = u'update users set notified = false where user_id = %s'
+        with db_conn.cursor() as cur:
+            cur.execute(sql, [self.user_id])
+
+    def notify(self):
+        html_body = flask.render_template(u'email_expired.html', user=self)
+        m = postmark.PMMail(
+            api_key=POSTMARK_API_KEY,
+            subject=u'GroupMemail service expiration'.format(group_name),
+            sender=EMAIL_SENDER,
+            to=self.email,
+            html_body=html_body
+        )
+        m.send(test=False)
+
+        self.notified = True
+        sql = u'update users set notified = true where user_id = %s'
+        with db_conn.cursor() as cur:
+            cur.execute(sql, [self.user_id])
 
 def external_url(endpoint, **values):
     return flask.url_for(endpoint, _external=True, _scheme=SCHEME, **values)
