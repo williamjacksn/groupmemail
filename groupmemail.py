@@ -336,7 +336,7 @@ def incoming(user_id):
 
     gm_group = gm.group_info(j.get(u'group_id'))
     group_name = gm_group.get(u'response').get(u'name')
-    html_body = build_email_body(j)
+    html_body = flask.render_template(u'email_message.html', j=j)
     reply_to_tokens = list(EMAIL_SENDER.partition(u'@'))
     reply_to_tokens.insert(1, u'+{}'.format(j.get(u'group_id')))
     reply_to = u''.join(reply_to_tokens)

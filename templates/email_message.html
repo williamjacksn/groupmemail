@@ -1,0 +1,14 @@
+{% if j.text is none %}
+    <p>{{ j.name }} posted a picture:</p>
+{% else %}
+    <p>{{ j.name }} said: {{ j.text }}</p>
+{% endif %}
+
+{% for attachment in j.attachments %}
+    {% if attachment.type == 'image' %}
+        <p><img style="max-width:99%" src="{{ attachment.url }}" /></p>
+    {% endif%}
+{% endfor %}
+
+<p>-----<br>
+Reply to this email or <a href="https://app.groupme.com/chats/{{ j.group_id }}">chat online</a>.</p>
