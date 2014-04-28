@@ -339,6 +339,7 @@ def incoming(user_id):
             if int(bot.get(u'group_id')) == int(j.get(u'group_id')):
                 if url in bot.get(u'callback_url'):
                     d = gm.destroy_bot(bot.get(u'bot_id'))
+        user.notify()
         return u'', 204
 
     gm_group = gm.group_info(j.get(u'group_id'))
