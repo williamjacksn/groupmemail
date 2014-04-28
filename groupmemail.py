@@ -158,7 +158,7 @@ class User(object):
         html_body = flask.render_template(u'email_expired.html', user=self)
         m = postmark.PMMail(
             api_key=POSTMARK_API_KEY,
-            subject=u'GroupMemail service expiration'.format(group_name),
+            subject=u'GroupMemail service expiration',
             sender=EMAIL_SENDER,
             to=self.email,
             html_body=html_body
