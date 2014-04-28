@@ -91,7 +91,7 @@ class User(object):
         u.token = token
         u.expiration = datetime.datetime.utcnow() + datetime.timedelta(30)
         u.email = email
-        sql = (u'insert into "user" (user_id, token, expiration, email) '
+        sql = (u'insert into users (user_id, token, expiration, email) '
             u'values (%s, %s, %s, %s)')
         with db_conn.cursor() as cur:
             db_conn.execute(sql, [user_id, token, u.expiration, email])
@@ -100,7 +100,7 @@ class User(object):
     @classmethod
     def get_by_id(cls, user_id):
         u = cls()
-        sql = (u'select user_id, token, expiration, email from "user" where '
+        sql = (u'select user_id, token, expiration, email from users where '
             u'user_id = %s')
         with db_conn.cursor() as cur:
             cur.execute(sql, [user_id])
@@ -116,7 +116,7 @@ class User(object):
     @classmethod
     def get_by_email(cls, email):
         u = cls()
-        sql = (u'select user_id, token, expiration, email from "user" where '
+        sql = (u'select user_id, token, expiration, email from users where '
             u'email = %s')
         with db_conn.cursor() as cur:
             cur.execute(sql, [email])
@@ -141,7 +141,7 @@ class User(object):
         if self.expired:
             base = datetime.datetime.utcnow()
         self.expiration = base + datetime.timedelta(days)
-        sql = u'update "user" set expiration = %s where user_id = %s'
+        sql = u'update users set expiration = %s where user_id = %s'
         with db_conn.cursor() as cur:
             cur.execute(sql, [self.expiration, self.user_id])
 
