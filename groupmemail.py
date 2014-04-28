@@ -233,8 +233,9 @@ def subscribe(group_id):
     if db_user is None:
         db_user = User.create(user_id, token, email)
 
-    url = external_url(u'incoming', user_id=user_id)
-    gm.create_bot(u'GroupMemail', group_id, url)
+    if not db_user.expired:
+        url = external_url(u'incoming', user_id=user_id)
+        gm.create_bot(u'GroupMemail', group_id, url)
 
     return flask.redirect(external_url(u'index'), code=303)
 
