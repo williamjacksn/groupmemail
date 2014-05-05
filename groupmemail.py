@@ -95,14 +95,16 @@ class User(object):
             u'values (%s, %s, %s, %s)')
         with db_conn.cursor() as cur:
             db_conn.execute(sql, [user_id, token, u.expiration, email])
-        u.notified = False
+        u.expiration_notified = False
+        u.bad_token_notified = False
         return u
 
     @classmethod
     def get_by_id(cls, user_id):
         u = cls()
-        sql = (u'select user_id, token, expiration, email, notified from '
-            u'users where user_id = %s')
+        sql = (u'select user_id, token, expiration, email, '
+            u'expiration_notified, bad_token_notified from users where '
+            u'user_id = %s')
         with db_conn.cursor() as cur:
             cur.execute(sql, [user_id])
             r = cur.fetchone()
@@ -112,14 +114,16 @@ class User(object):
         u.token = r[1].decode(u'utf-8')
         u.expiration = r[2]
         u.email = r[3].decode(u'utf-8')
-        u.notified = bool(r[4])
+        u.expiration_notified = bool(r[4])
+        u.bad_token_notified = bool(r[5])
         return u
 
     @classmethod
     def get_by_email(cls, email):
         u = cls()
-        sql = (u'select user_id, token, expiration, email, notified from '
-            u'users where email = %s')
+        sql = (u'select user_id, token, expiration, email, '
+            u'expiration_notified, bad_token_notified from users where '
+            u'email = %s')
         with db_conn.cursor() as cur:
             cur.execute(sql, [email])
             r = cur.fetchone()
@@ -129,7 +133,8 @@ class User(object):
         u.token = r[1].decode(u'utf-8')
         u.expiration = r[2]
         u.email = r[3].decode(u'utf-8')
-        u.notified = bool(r[4])
+        u.expiration_notified = bool(r[4])
+        u.bad_token_notified = bool(r[5])
         return u
 
     def __repr__(self):
@@ -145,16 +150,29 @@ class User(object):
             base = datetime.datetime.utcnow()
 
         self.expiration = base + datetime.timedelta(days)
-        sql = u'update users set expiration = %s where user_id = %s'
+        self.expiration_notified = False
+        sql = (u'update users set expiration = %s, expiration_notified = '
+            u'False where user_id = %s')
         with db_conn.cursor() as cur:
             cur.execute(sql, [self.expiration, self.user_id])
 
-        self.notified = False
-        sql = u'update users set notified = false where user_id = %s'
+    def notify_bad_token(self):
+        html_body = flask.render_template(u'email_problem.html')
+        m = postmark.PMMail(
+            api_key=POSTMARK_API_KEY,
+            subject=u'GroupMemail delivery problem',
+            sender=EMAIL_SENDER,
+            to=self.email,
+            html_body=html_body
+        )
+        m.send(test=False)
+
+        self.bad_token_notified = True
+        sql = u'update users set bad_token_notified = True where user_id = %s'
         with db_conn.cursor() as cur:
             cur.execute(sql, [self.user_id])
 
-    def notify(self):
+    def notify_expiration(self):
         html_body = flask.render_template(u'email_expired.html', user=self)
         m = postmark.PMMail(
             api_key=POSTMARK_API_KEY,
@@ -165,10 +183,19 @@ class User(object):
         )
         m.send(test=False)
 
-        self.notified = True
-        sql = u'update users set notified = true where user_id = %s'
+        self.expiration_notified = True
+        sql = u'update users set expiration_notified = true where user_id = %s'
         with db_conn.cursor() as cur:
             cur.execute(sql, [self.user_id])
+
+    def set_token(self, token):
+        self.token = token
+        self.bad_token_notified = False
+        sql = (u'update users set token = %s, bad_token_notified = False '
+            u'where user_id = %s')
+        with db_conn.cursor() as cur:
+            cur.execute(sql, [token, self.user_id])
+
 
 def external_url(endpoint, **values):
     return flask.url_for(endpoint, _external=True, _scheme=SCHEME, **values)
@@ -187,6 +214,8 @@ def index():
     if db_user is None:
         msg = u'Subscribe to a group to get free service for 30 days.'
     else:
+        if db_user.token != token:
+            db_user.set_token(token)
         if db_user.expired:
             msg = u'Your GroupMemail service expired on {}.'
         else:
@@ -232,6 +261,9 @@ def subscribe(group_id):
     db_user = User.get_by_id(user_id)
     if db_user is None:
         db_user = User.create(user_id, token, email)
+
+    if db_user.token != token:
+        db_user.set_token(token)
 
     if not db_user.expired:
         url = external_url(u'incoming', user_id=user_id)
@@ -340,12 +372,33 @@ def incoming(user_id):
             if int(bot.get(u'group_id')) == int(j.get(u'group_id')):
                 if url in bot.get(u'callback_url'):
                     d = gm.destroy_bot(bot.get(u'bot_id'))
-        if not user.notified:
-            user.notify()
+        if not user.expiration_notified:
+            user.notify_expiration()
         return u'', 204
 
     gm_group = gm.group_info(j.get(u'group_id'))
-    group_name = gm_group.get(u'response').get(u'name')
+    if gm_group is None:
+        if user.bad_token_notified:
+            err = u'{} was already notified of bad token.'.format(user.email)
+            app.logger.error(err)
+        else:
+            err = u'Sending bad token notification to {}.'.format(user.email)
+            app.logger.error(err)
+            user.notify_bad_token()
+        return u'Thank you.'
+
+    try:
+        group_name = gm_group.get(u'response').get(u'name')
+    except:
+        if user.bad_token_notified:
+            err = u'{} was already notified of bad token.'.format(user.email)
+            app.logger.error(err)
+        else:
+            err = u'Sending bad token notification to {}.'.format(user.email)
+            app.logger.error(err)
+            user.notify_bad_token()
+        return u'Thank you'
+
     html_body = flask.render_template(u'email_message.html', j=j)
     reply_to_tokens = list(EMAIL_SENDER.partition(u'@'))
     reply_to_tokens.insert(1, u'+{}'.format(j.get(u'group_id')))
