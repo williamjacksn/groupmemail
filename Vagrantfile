@@ -26,8 +26,7 @@ fi
 END_OF_LINE
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-    config.vm.box = "precise64"
-    config.vm.box_url = "http://files.vagrantup.com/precise64.box"
+    config.vm.box = "ubuntu/trusty64"
     config.vm.network :forwarded_port, guest: 5000, host: 5000, auto_correct: true
     config.vm.provision :shell, :inline => provision_script
 end
