@@ -1,1 +1,1 @@
-web: gunicorn groupmemail:app --workers=2
+web: newrelic-admin run-program gunicorn groupmemail:app --workers=2
