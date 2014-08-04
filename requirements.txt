@@ -1,5 +1,6 @@
 Flask
 gunicorn
+newrelic
 psycopg2
 python-postmark
 requests
