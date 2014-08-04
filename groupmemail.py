@@ -200,6 +200,10 @@ class User(object):
 def external_url(endpoint, **values):
     return flask.url_for(endpoint, _external=True, _scheme=SCHEME, **values)
 
+@app.route(u'/ping')
+def ping():
+    return u'pong'
+
 @app.route(u'/')
 def index():
     if u'groupme_token' in flask.request.cookies:
