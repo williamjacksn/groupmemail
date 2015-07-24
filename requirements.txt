@@ -4,4 +4,3 @@ psycopg2
 python-postmark
 requests
 stripe
-supervisor
