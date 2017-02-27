@@ -135,10 +135,10 @@ class User(object):
         u = cls()
         sql = """
             SELECT user_id, token, expiration, email, expiration_notified,
-            bad_token_notified FROM users WHERE email = %s
+            bad_token_notified FROM users WHERE LOWER(email) = %s
         """
         with db_conn.cursor() as cur:
-            cur.execute(sql, [email])
+            cur.execute(sql, [email.lower()])
             r = cur.fetchone()
         if r is None:
             return None
