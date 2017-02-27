@@ -451,6 +451,7 @@ def handle_email():
     source = j.get('FromFull').get('Email')
     dest = j.get('MailboxHash')
     text = j.get('TextBody')
+    reply_text = j.get('StrippedTextReply')
 
     user = User.get_by_email(source)
     if user is None:
@@ -458,11 +459,14 @@ def handle_email():
         app.logger.error(err)
         flask.abort(404)
 
-    tokens = text.splitlines()
-    if '' in tokens:
-        empty_line_index = tokens.index('')
-        tokens = tokens[:empty_line_index]
-    message = ' '.join(tokens)
+    if reply_text:
+        message = reply_text
+    else:
+        tokens = [line.strip() for line in text.splitlines()]
+        if '' in tokens:
+            empty_line_index = tokens.index('')
+            tokens = tokens[:empty_line_index]
+        message = ' '.join(tokens)
     gm = GroupMeClient(user.token)
     gm.create_message(dest, message)
 
