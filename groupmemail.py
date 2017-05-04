@@ -2,7 +2,6 @@ import datetime
 import flask
 import json
 import os
-import postmark
 import psycopg2
 import requests
 import stripe
@@ -19,7 +18,8 @@ db_conn = psycopg2.connect(os.environ.get('DB_URI'))
 db_conn.autocommit = True
 
 GM_CID = os.environ.get('GROUPME_CLIENT_ID')
-POSTMARK_API_KEY = os.environ.get('POSTMARK_API_KEY')
+MAILGUN_API_KEY = os.environ.get('MAILGUN_API_KEY')
+MAILGUN_DOMAIN = os.environ.get('MAILGUN_DOMAIN')
 EMAIL_SENDER = os.environ.get('EMAIL_SENDER')
 SCHEME = os.environ.get('SCHEME')
 
@@ -100,10 +100,7 @@ class User(object):
         u.token = token
         u.expiration = datetime.datetime.utcnow() + datetime.timedelta(30)
         u.email = email
-        sql = """
-            INSERT INTO users (user_id, token, expiration, email)
-            VALUES (%s, %s, %s, %s)
-        """
+        sql = 'INSERT INTO users (user_id, token, expiration, email) VALUES (%s, %s, %s, %s)'
         with db_conn.cursor() as cur:
             cur.execute(sql, [user_id, token, u.expiration, email])
         u.expiration_notified = False
@@ -114,8 +111,8 @@ class User(object):
     def get_by_id(cls, user_id):
         u = cls()
         sql = """
-            SELECT user_id, token, expiration, email, expiration_notified,
-            bad_token_notified FROM users WHERE user_id = %s
+            SELECT user_id, token, expiration, email, expiration_notified, bad_token_notified
+            FROM users WHERE user_id = %s
         """
         with db_conn.cursor() as cur:
             cur.execute(sql, [user_id])
@@ -134,8 +131,8 @@ class User(object):
     def get_by_email(cls, email):
         u = cls()
         sql = """
-            SELECT user_id, token, expiration, email, expiration_notified,
-            bad_token_notified FROM users WHERE LOWER(email) = %s
+            SELECT user_id, token, expiration, email, expiration_notified, bad_token_notified
+            FROM users WHERE LOWER(email) = %s
         """
         with db_conn.cursor() as cur:
             cur.execute(sql, [email.lower()])
@@ -164,23 +161,22 @@ class User(object):
 
         self.expiration = base + datetime.timedelta(days)
         self.expiration_notified = False
-        sql = """
-            UPDATE users SET expiration = %s, expiration_notified = FALSE
-            WHERE user_id = %s
-        """
+        sql = 'UPDATE users SET expiration = %s, expiration_notified = FALSE WHERE user_id = %s'
         with db_conn.cursor() as cur:
             cur.execute(sql, [self.expiration, self.user_id])
 
     def notify_bad_token(self):
         html_body = flask.render_template('email_problem.html')
-        m = postmark.PMMail(
-            api_key=POSTMARK_API_KEY,
-            subject=u'GroupMemail delivery problem',
-            sender=EMAIL_SENDER,
-            to=self.email,
-            html_body=html_body
+        requests.post(
+            'https://api.mailgun.net/v3/{}/messages'.format(MAILGUN_DOMAIN),
+            auth=('api', MAILGUN_API_KEY),
+            data={
+                'from': EMAIL_SENDER,
+                'to': self.email,
+                'subject': 'GroupMemail delivery problem',
+                'html': html_body
+            }
         )
-        m.send(test=False)
 
         self.bad_token_notified = True
         sql = 'UPDATE users SET bad_token_notified = TRUE WHERE user_id = %s'
@@ -189,14 +185,16 @@ class User(object):
 
     def notify_expiration(self):
         html_body = flask.render_template('email_expired.html', user=self)
-        m = postmark.PMMail(
-            api_key=POSTMARK_API_KEY,
-            subject=u'GroupMemail service expiration',
-            sender=EMAIL_SENDER,
-            to=self.email,
-            html_body=html_body
+        requests.post(
+            'https://api.mailgun.net/v3/{}/messages'.format(MAILGUN_DOMAIN),
+            auth=('api', MAILGUN_API_KEY),
+            data={
+                'from': EMAIL_SENDER,
+                'to': self.email,
+                'subject': 'GroupMemail service expiration',
+                'html': html_body
+            }
         )
-        m.send(test=False)
 
         self.expiration_notified = True
         sql = 'UPDATE users SET expiration_notified = TRUE WHERE user_id = %s'
@@ -206,9 +204,7 @@ class User(object):
     def set_token(self, token):
         self.token = token
         self.bad_token_notified = False
-        sql = """
-            UPDATE users SET token = %s, bad_token_notified = FALSE
-            WHERE user_id = %s"""
+        sql = 'UPDATE users SET token = %s, bad_token_notified = FALSE WHERE user_id = %s'
         with db_conn.cursor() as cur:
             cur.execute(sql, [token, self.user_id])
 
@@ -387,15 +383,13 @@ def incoming(user_id):
     app.logger.debug(j)
     for field in ['name', 'text', 'group_id', 'attachments']:
         if field not in j:
-            e_msg = 'Posted parameters did not include a required field: {}'
-            app.logger.error(e_msg.format(field))
+            app.logger.error('Posted parameters did not include a required field: {}'.format(field))
             flask.abort(500)
 
     gm = GroupMeClient(user.token)
 
     if user.expired:
-        err = 'user_id {} expired on {}'.format(user_id, user.expiration)
-        app.logger.error(err)
+        app.logger.error('user_id {} expired on {}'.format(user_id, user.expiration))
         url = flask.url_for('incoming', user_id=user_id)
         for bot in gm.bots().get('response'):
             if int(bot.get('group_id')) == int(j.get('group_id')):
@@ -408,11 +402,9 @@ def incoming(user_id):
     gm_group = gm.group_info(j.get('group_id'))
     if gm_group is None:
         if user.bad_token_notified:
-            err = '{} was already notified of bad token.'.format(user.email)
-            app.logger.error(err)
+            app.logger.error('{} was already notified of bad token.'.format(user.email))
         else:
-            err = 'Sending bad token notification to {}.'.format(user.email)
-            app.logger.error(err)
+            app.logger.error('Sending bad token notification to {}.'.format(user.email))
             user.notify_bad_token()
         return 'Thank you.'
 
@@ -420,53 +412,44 @@ def incoming(user_id):
         group_name = gm_group.get('response').get('name')
     except AttributeError:
         if user.bad_token_notified:
-            err = '{} was already notified of bad token.'.format(user.email)
-            app.logger.error(err)
+            app.logger.error('{} was already notified of bad token.'.format(user.email))
         else:
-            err = 'Sending bad token notification to {}.'.format(user.email)
-            app.logger.error(err)
+            app.logger.error('Sending bad token notification to {}.'.format(user.email))
             user.notify_bad_token()
         return 'Thank you'
 
     html_body = flask.render_template('email_message.html', j=j)
-    reply_to_tokens = list(EMAIL_SENDER.partition('@'))
-    reply_to_tokens.insert(1, '+{}'.format(j.get('group_id')))
-    reply_to = ''.join(reply_to_tokens)
-    m = postmark.PMMail(
-        api_key=POSTMARK_API_KEY,
-        subject='New message in {}'.format(group_name),
-        sender=EMAIL_SENDER,
-        reply_to=reply_to,
-        to=user.email,
-        html_body=html_body
+    reply_to = '{}@{}'.format(j.get('group_id'), MAILGUN_DOMAIN)
+    requests.post(
+        'https://api.mailgun.net/v3/{}/messages'.format(MAILGUN_DOMAIN),
+        auth=('api', MAILGUN_API_KEY),
+        data={
+            'from': EMAIL_SENDER,
+            'h:Reply-To': reply_to,
+            'to': user.email,
+            'subject': 'New message in {}'.format(group_name),
+            'html': html_body
+        }
     )
-    m.send(test=False)
     return 'Thank you.'
 
 
 @app.route('/email', methods=['POST'])
 def handle_email():
-    j = flask.request.get_json()
-
-    source = j.get('FromFull').get('Email')
-    dest = j.get('MailboxHash')
-    text = j.get('TextBody')
-    reply_text = j.get('StrippedTextReply')
+    source = flask.request.form.get('sender')
+    dest = flask.request.form.get('recipient').split('@')[0]
+    text = flask.request.form.get('stripped-text')
+    tokens = [line.strip() for line in text.splitlines()]
+    if '' in tokens:
+        empty_line_index = tokens.index('')
+        tokens = tokens[:empty_line_index]
+    message = ' '.join(tokens)
 
     user = User.get_by_email(source)
     if user is None:
-        err = 'Received mail from unknown address: {}'.format(source)
-        app.logger.error(err)
-        flask.abort(404)
+        app.logger.error('Received mail from unknown address: {}'.format(source))
+        flask.abort(406)
 
-    if reply_text:
-        message = reply_text
-    else:
-        tokens = [line.strip() for line in text.splitlines()]
-        if '' in tokens:
-            empty_line_index = tokens.index('')
-            tokens = tokens[:empty_line_index]
-        message = ' '.join(tokens)
     gm = GroupMeClient(user.token)
     gm.create_message(dest, message)
 
