@@ -1,0 +1,3 @@
+{% extends 'base.html' %}
+
+{% block header %}Hello, {{ g.user.name }}. <a class="btn btn-danger pull-right" href="{{ url_for('logout') }}">Log out</a>{% endblock %}

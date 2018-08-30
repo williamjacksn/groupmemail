@@ -1,5 +1,5 @@
-Flask
-gunicorn
-psycopg2
-requests
-stripe
+Flask==1.0.2
+psycopg2==2.7.5
+requests==2.19.1
+stripe==2.6.0
+waitress==1.1.0

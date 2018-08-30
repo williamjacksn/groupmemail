@@ -1,1 +1,1 @@
-Email notifications for GroupMe. https://groupmemail.herokuapp.com
+Email notifications for GroupMe. https://groupmemail.subtlecoolness.com

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block header %}Hello there. <a class="btn btn-success pull-right" href="https://oauth.groupme.com/oauth/authorize?client_id={{ cid }}">Log in</a>{% endblock %}
+{% block header %}Hello there. <a class="btn btn-success pull-right" href="https://oauth.groupme.com/oauth/authorize?client_id={{ g.cid }}">Log in</a>{% endblock %}
 
 {% block content %}
     <p class="lead">Log in to get email notifications for your <a href="https://groupme.com/">GroupMe</a> groups.</p>

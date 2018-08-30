@@ -1,86 +1,23 @@
 import datetime
 import flask
-import json
-import os
+import groupmemail.config
+import groupmemail.groupme
+import logging
 import psycopg2
 import requests
 import stripe
+import stripe.error
+import sys
+import waitress
 
-stripe_keys = {
-    'publishable_key': os.environ.get('STRIPE_PUBLISHABLE_KEY'),
-    'secret_key': os.environ.get('STRIPE_SECRET_KEY')
-}
-stripe.api_key = stripe_keys.get('secret_key')
+config = groupmemail.config.Config()
 
 app = flask.Flask(__name__)
+stripe.api_key = config.stripe_secret_key
 
-db_conn = psycopg2.connect(os.environ.get('DB_URI'))
+
+db_conn = psycopg2.connect(config.dsn)
 db_conn.autocommit = True
-
-GM_CID = os.environ.get('GROUPME_CLIENT_ID')
-MAILGUN_API_KEY = os.environ.get('MAILGUN_API_KEY')
-MAILGUN_DOMAIN = os.environ.get('MAILGUN_DOMAIN')
-EMAIL_SENDER = os.environ.get('EMAIL_SENDER')
-SCHEME = os.environ.get('SCHEME')
-
-
-class GroupMeClient(object):
-    def __init__(self, token):
-        self.params = {'token': token}
-
-    def me(self):
-        url = 'https://api.groupme.com/v3/users/me'
-        r = requests.get(url, params=self.params)
-        return r.json()
-
-    def group_info(self, group_id):
-        url = 'https://api.groupme.com/v3/groups/{}'.format(group_id)
-        r = requests.get(url, params=self.params)
-        return r.json()
-
-    def create_message(self, group_id, text):
-        url = 'https://api.groupme.com/v3/groups/{}/messages'.format(group_id)
-        message = {'message': {'text': text}}
-        data = json.dumps(message)
-        headers = {'content-type': 'application/json'}
-        r = requests.post(url, params=self.params, data=data, headers=headers)
-        return r.json()
-
-    def bots(self):
-        url = 'https://api.groupme.com/v3/bots'
-        r = requests.get(url, params=self.params)
-        return r.json()
-
-    def create_bot(self, name, group_id, callback_url):
-        url = 'https://api.groupme.com/v3/bots'
-        bot_def = {
-            'name': name,
-            'group_id': group_id,
-            'callback_url': callback_url
-        }
-        bot = {'bot': bot_def}
-        data = json.dumps(bot)
-        r = requests.post(url, params=self.params, data=data)
-        return r.json()
-
-    def update_bot(self, bot_id, name, group_id, callback_url):
-        url = 'https://api.groupme.com/v3/bots/{}'.format(bot_id)
-        bot_def = {
-            'bot_id': bot_id,
-            'name': name,
-            'group_id': group_id,
-            'callback_url': callback_url
-        }
-        bot = {'bot': bot_def}
-        data = json.dumps(bot)
-        r = requests.post(url, params=self.params, data=data)
-        return r
-
-    def destroy_bot(self, bot_id):
-        url = 'https://api.groupme.com/v3/bots/destroy'
-        data = {'bot_id': bot_id}
-        r = requests.post(url, params=self.params, data=json.dumps(data))
-        return r.status_code
 
 
 class User(object):
@@ -168,10 +105,10 @@ class User(object):
     def notify_bad_token(self):
         html_body = flask.render_template('email_problem.html')
         requests.post(
-            'https://api.mailgun.net/v3/{}/messages'.format(MAILGUN_DOMAIN),
-            auth=('api', MAILGUN_API_KEY),
+            f'https://api.mailgun.net/v3/{config.mailgun_domain}/messages',
+            auth=('api', config.mailgun_api_key),
             data={
-                'from': EMAIL_SENDER,
+                'from': config.email_sender,
                 'to': self.email,
                 'subject': 'GroupMemail delivery problem',
                 'html': html_body
@@ -186,10 +123,10 @@ class User(object):
     def notify_expiration(self):
         html_body = flask.render_template('email_expired.html', user=self)
         requests.post(
-            'https://api.mailgun.net/v3/{}/messages'.format(MAILGUN_DOMAIN),
-            auth=('api', MAILGUN_API_KEY),
+            f'https://api.mailgun.net/v3/{config.mailgun_domain}/messages',
+            auth=('api', config.mailgun_api_key),
             data={
-                'from': EMAIL_SENDER,
+                'from': config.email_sender,
                 'to': self.email,
                 'subject': 'GroupMemail service expiration',
                 'html': html_body
@@ -210,22 +147,25 @@ class User(object):
 
 
 def external_url(endpoint, **values):
-    return flask.url_for(endpoint, _external=True, _scheme=SCHEME, **values)
+    return flask.url_for(endpoint, _external=True, _scheme=config.scheme, **values)
 
 
 @app.route('/ping')
 def ping():
+    app.logger.debug(f'{flask.request.method} {flask.request.full_path}')
     return 'pong'
 
 
 @app.route('/')
 def index():
+    app.logger.debug(f'{flask.request.method} {flask.request.full_path}')
     if 'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get('groupme_token')
     else:
-        return flask.render_template('landing.html', cid=GM_CID)
+        flask.g.cid = config.groupme_client_id
+        return flask.render_template('landing.html')
 
-    gm = GroupMeClient(token)
+    gm = groupmemail.groupme.GroupMeClient(token)
     gm_user = gm.me()
     user = gm_user.get('response')
     db_user = User.get_by_id(user.get('user_id'))
@@ -240,11 +180,13 @@ def index():
             msg = 'Your GroupMemail service will expire on {}.'
         msg = msg.format(db_user.expiration.strftime('%d %B %Y'))
     user['expiration_msg'] = msg
-    return flask.render_template('list.html', user=user)
+    flask.g.user = user
+    return flask.render_template('list.html')
 
 
 @app.route('/login')
 def login():
+    app.logger.debug(f'{flask.request.method} {flask.request.full_path}')
     index_url = external_url('index')
     resp = flask.make_response(flask.redirect(index_url, code=303))
 
@@ -261,6 +203,7 @@ def login():
 
 @app.route('/logout')
 def logout():
+    app.logger.debug(f'{flask.request.method} {flask.request.full_path}')
     index_url = external_url('index')
     resp = flask.make_response(flask.redirect(index_url, code=303))
     resp.delete_cookie('groupme_token')
@@ -269,12 +212,13 @@ def logout():
 
 @app.route('/subscribe/<int:group_id>')
 def subscribe(group_id):
+    app.logger.debug(f'{flask.request.method} {flask.request.full_path}')
     if 'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get('groupme_token')
     else:
         return flask.redirect(external_url('index'), code=303)
 
-    gm = GroupMeClient(token)
+    gm = groupmemail.groupme.GroupMeClient(token)
     gm_user = gm.me()
     user_id = gm_user.get('response').get('id')
     email = gm_user.get('response').get('email')
@@ -295,12 +239,13 @@ def subscribe(group_id):
 
 @app.route('/unsubscribe/<int:group_id>')
 def unsubscribe(group_id):
+    app.logger.debug(f'{flask.request.method} {flask.request.full_path}')
     if 'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get('groupme_token')
     else:
         return flask.redirect(external_url('index'), code=303)
 
-    gm = GroupMeClient(token)
+    gm = groupmemail.groupme.GroupMeClient(token)
     gm_user = gm.me()
     user_id = gm_user.get('response').get('id')
 
@@ -317,12 +262,13 @@ def unsubscribe(group_id):
 
 @app.route('/payment')
 def payment():
+    app.logger.debug(f'{flask.request.method} {flask.request.full_path}')
     if 'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get('groupme_token')
     else:
         return flask.redirect(external_url('index'), code=303)
 
-    gm = GroupMeClient(token)
+    gm = groupmemail.groupme.GroupMeClient(token)
     gm_user = gm.me()
     user = gm_user.get('response')
     db_user = User.get_by_id(user.get('user_id'))
@@ -336,12 +282,14 @@ def payment():
         msg = msg.format(db_user.expiration.strftime('%d %B %Y'))
     user['expiration_msg'] = msg
 
-    key = stripe_keys.get('publishable_key')
-    return flask.render_template('payment.html', key=key, user=user)
+    flask.g.user = user
+    flask.g.stripe_key = config.stripe_publishable_key
+    return flask.render_template('payment.html')
 
 
 @app.route('/charge', methods=['POST'])
 def charge():
+    app.logger.debug(f'{flask.request.method} {flask.request.full_path}')
     if 'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get('groupme_token')
     else:
@@ -349,7 +297,7 @@ def charge():
 
     amount = 600
 
-    gm = GroupMeClient(token)
+    gm = groupmemail.groupme.GroupMeClient(token)
     gm_user = gm.me()
     user = gm_user.get('response')
 
@@ -363,7 +311,7 @@ def charge():
             currency='usd',
             description='GroupMemail Service: 6 months'
         )
-    except stripe.CardError:
+    except stripe.error.CardError:
         return flask.redirect(external_url('index'), code=303)
 
     db_user = User.get_by_id(user.get('user_id'))
@@ -374,22 +322,23 @@ def charge():
 
 @app.route('/incoming/<int:user_id>', methods=['POST'])
 def incoming(user_id):
+    app.logger.debug(f'{flask.request.method} {flask.request.full_path}')
     user = User.get_by_id(user_id)
     if user is None:
-        app.logger.error('{} is not a known user_id'.format(user_id))
+        app.logger.error(f'{user_id} is not a known user_id')
         flask.abort(404)
 
     j = flask.request.get_json()
     app.logger.debug(j)
     for field in ['name', 'text', 'group_id', 'attachments']:
         if field not in j:
-            app.logger.error('Posted parameters did not include a required field: {}'.format(field))
+            app.logger.error(f'Posted parameters did not include a required field: {field}')
             flask.abort(500)
 
-    gm = GroupMeClient(user.token)
+    gm = groupmemail.groupme.GroupMeClient(user.token)
 
     if user.expired:
-        app.logger.error('user_id {} expired on {}'.format(user_id, user.expiration))
+        app.logger.error(f'user_id {user_id} expired on {user.expiration}')
         url = flask.url_for('incoming', user_id=user_id)
         for bot in gm.bots().get('response'):
             if int(bot.get('group_id')) == int(j.get('group_id')):
@@ -402,9 +351,9 @@ def incoming(user_id):
     gm_group = gm.group_info(j.get('group_id'))
     if gm_group is None:
         if user.bad_token_notified:
-            app.logger.error('{} was already notified of bad token.'.format(user.email))
+            app.logger.error(f'{user.email} was already notified of bad token.')
         else:
-            app.logger.error('Sending bad token notification to {}.'.format(user.email))
+            app.logger.error(f'Sending bad token notification to {user.email}.')
             user.notify_bad_token()
         return 'Thank you.'
 
@@ -412,22 +361,23 @@ def incoming(user_id):
         group_name = gm_group.get('response').get('name')
     except AttributeError:
         if user.bad_token_notified:
-            app.logger.error('{} was already notified of bad token.'.format(user.email))
+            app.logger.error(f'{user.email} was already notified of bad token.')
         else:
-            app.logger.error('Sending bad token notification to {}.'.format(user.email))
+            app.logger.error(f'Sending bad token notification to {user.email}.')
             user.notify_bad_token()
         return 'Thank you'
 
     html_body = flask.render_template('email_message.html', j=j)
-    reply_to = '{}@{}'.format(j.get('group_id'), MAILGUN_DOMAIN)
+    group_id = j.get('group_id')
+    reply_to = f'{group_id}@{config.mailgun_domain}'
     requests.post(
-        'https://api.mailgun.net/v3/{}/messages'.format(MAILGUN_DOMAIN),
-        auth=('api', MAILGUN_API_KEY),
+        f'https://api.mailgun.net/v3/{config.mailgun_domain}/messages',
+        auth=('api', config.mailgun_api_key),
         data={
-            'from': EMAIL_SENDER,
+            'from': config.email_sender,
             'h:Reply-To': reply_to,
             'to': user.email,
-            'subject': 'New message in {}'.format(group_name),
+            'subject': f'New message in {group_name}',
             'html': html_body
         }
     )
@@ -436,6 +386,7 @@ def incoming(user_id):
 
 @app.route('/email', methods=['POST'])
 def handle_email():
+    app.logger.debug(f'{flask.request.method} {flask.request.full_path}')
     source = flask.request.form.get('sender')
     dest = flask.request.form.get('recipient').split('@')[0]
     text = flask.request.form.get('stripped-text')
@@ -447,13 +398,19 @@ def handle_email():
 
     user = User.get_by_email(source)
     if user is None:
-        app.logger.error('Received mail from unknown address: {}'.format(source))
+        app.logger.error(f'Received mail from unknown address: {source}')
         flask.abort(406)
 
-    gm = GroupMeClient(user.token)
+    gm = groupmemail.groupme.GroupMeClient(user.token)
     gm.create_message(dest, message)
 
     return 'Thank you.'
 
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+
+def main():
+    logging.basicConfig(format=config.log_format, level='DEBUG', stream=sys.stdout)
+    app.logger.debug(f'groupmemail {config.version}')
+    app.logger.debug(f'Changing log level to {config.log_level}')
+    logging.getLogger().setLevel(config.log_level)
+
+    waitress.serve(app)
