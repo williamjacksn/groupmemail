@@ -1,6 +1,6 @@
 function groupme_token() {
     "use strict";
-    var i, c, cookies = document.cookie.split("; ");
+    let i, c, cookies = document.cookie.split("; ");
     for (i = 0; i < cookies.length; i += 1) {
         c = cookies[i].split("=");
         if (c[0] === "groupme_token") {
@@ -9,19 +9,19 @@ function groupme_token() {
     }
 }
 
-var api_url_base = "https://api.groupme.com/v3/";
-var token = groupme_token();
+const api_url_base = "https://api.groupme.com/v3/";
+let token = groupme_token();
 
 function add_class(element, class_name) {
     "use strict";
-    var current_classes = element.className.split(" ");
+    let current_classes = element.className.split(" ");
     current_classes.push(class_name);
     element.className = current_classes.join(" ").trim();
 }
 
 function mark_subscribed(group_id) {
     "use strict";
-    var group_el = document.getElementById(group_id);
+    let group_el = document.getElementById(group_id);
     if (group_el) {
         group_el.setAttribute("href", "/unsubscribe/" + group_id);
         group_el.lastChild.innerHTML = "Subscribed ✓";
@@ -31,20 +31,20 @@ function mark_subscribed(group_id) {
 
 function groupme_bots_callback() {
     "use strict";
-    var i, bot,
+    let i, bot,
         resp = JSON.parse(this.responseText).response;
 
     for (i = 0; i < resp.length; i += 1) {
         bot = resp[i];
-        if (bot.callback_url.indexOf("/incoming/") > -1) {
-            mark_subscribed(bot.group_id);
+        if (bot["callback_url"].indexOf("/incoming/") > -1) {
+            mark_subscribed(bot["group_id"]);
         }
     }
 }
 
 function groupme_groups_callback() {
     "use strict";
-    var i, group, a, span,
+    let i, group, a, span,
         resp = JSON.parse(this.responseText).response,
         group_p = document.getElementById("group_p"),
         group_list = document.getElementById("group_list"),
@@ -61,13 +61,13 @@ function groupme_groups_callback() {
         group = resp[i];
 
         a = document.createElement("a");
-        a.setAttribute("id", group.group_id);
-        a.setAttribute("href", "/subscribe/" + group.group_id);
+        a.setAttribute("id", group["group_id"]);
+        a.setAttribute("href", "/subscribe/" + group["group_id"]);
         a.innerHTML = group.name + " ";
         add_class(a, "list-group-item");
 
         span = document.createElement("span");
-        span.setAttribute("id", group.group_id + "_badge");
+        span.setAttribute("id", group["group_id"] + "_badge");
         add_class(span, "badge");
         span.innerHTML = "Not subscribed ✗";
 
@@ -82,7 +82,7 @@ function groupme_groups_callback() {
 
 function startup() {
     "use strict";
-    var xhr_groups = new XMLHttpRequest(),
+    let xhr_groups = new XMLHttpRequest(),
         groups_url = api_url_base + "groups?token=" + token;
     xhr_groups.onload = groupme_groups_callback;
     xhr_groups.open("get", groups_url);

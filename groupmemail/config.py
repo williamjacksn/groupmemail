@@ -1,3 +1,20 @@
+"""
+List of environment variables:
+
+DSN
+EMAIL_SENDER
+GROUPME_CLIENT_ID
+LOG_FORMAT
+LOG_LEVEL
+MAILGUN_API_KEY
+MAILGUN_DOMAIN
+SCHEME
+SECRET_KEY
+SERVER_NAME
+STRIPE_PUBLISHABLE_KEY
+STRIPE_SECRET_KEY
+"""
+
 import os
 
 
@@ -10,9 +27,11 @@ class Config:
     mailgun_api_key: str
     mailgun_domain: str
     scheme: str
+    secret_key: str
+    server_name: str
     stripe_publishable_key: str
     stripe_secret_key: str
-    version: str = '1.0.1'
+    version: str = '2.0.1'
 
     def __init__(self):
         self.dsn = os.getenv('DSN')
@@ -23,5 +42,7 @@ class Config:
         self.mailgun_api_key = os.getenv('MAILGUN_API_KEY')
         self.mailgun_domain = os.getenv('MAILGUN_DOMAIN')
         self.scheme = os.getenv('SCHEME', 'http')
+        self.secret_key = os.getenv('SECRET_KEY')
+        self.server_name = os.getenv('SERVER_NAME', 'localhost:8080')
         self.stripe_publishable_key = os.getenv('STRIPE_PUBLISHABLE_KEY')
         self.stripe_secret_key = os.getenv('STRIPE_SECRET_KEY')
