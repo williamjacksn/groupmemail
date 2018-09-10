@@ -31,7 +31,7 @@ class Config:
     server_name: str
     stripe_publishable_key: str
     stripe_secret_key: str
-    version: str = '2.0.1'
+    version: str = '2.1.0'
 
     def __init__(self):
         self.dsn = os.getenv('DSN')

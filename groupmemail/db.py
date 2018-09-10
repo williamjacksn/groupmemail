@@ -87,7 +87,7 @@ class GroupMemailDatabase:
 
     def get_user_by_email(self, email: str) -> Optional[Dict]:
         sql = '''
-            SELECT bad_token_notified, email, expiration, expiration_notified, token, user_id
+            SELECT bad_token_notified, email, expiration, expiration_notified, ignored, token, user_id
             FROM users
             WHERE email = %(email)s
         '''
@@ -96,7 +96,7 @@ class GroupMemailDatabase:
 
     def get_user_by_id(self, user_id: int) -> Optional[Dict]:
         sql = '''
-            SELECT bad_token_notified, email, expiration, expiration_notified, token, user_id
+            SELECT bad_token_notified, email, expiration, expiration_notified, ignored, token, user_id
             FROM users
             WHERE user_id = %(user_id)s
         '''
@@ -125,6 +125,12 @@ class GroupMemailDatabase:
                 )
             ''')
             self.add_schema_version(1)
+        if self.version < 2:
+            log.info('Migrating from version 1 to version 2')
+            self._u('''
+                ALTER TABLE users
+                ADD COLUMN ignored BOOLEAN DEFAULT FALSE
+            ''')
 
     def set_bad_token_notified(self, user_id: int, bad_token_notified: bool):
         params = {

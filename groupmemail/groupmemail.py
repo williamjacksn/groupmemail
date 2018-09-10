@@ -239,6 +239,10 @@ def incoming(user_id):
         app.logger.error(f'{user_id} is not a known user_id')
         flask.abort(404)
 
+    if user['ignored']:
+        app.logger.warning(f'{user_id} is currently being ignored')
+        flask.abort(404)
+
     email = user['email']
 
     j = flask.request.get_json()
