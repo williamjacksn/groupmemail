@@ -16,6 +16,7 @@ STRIPE_SECRET_KEY
 """
 
 import os
+import pathlib
 
 
 class Config:
@@ -31,7 +32,6 @@ class Config:
     server_name: str
     stripe_publishable_key: str
     stripe_secret_key: str
-    version: str = '2.1.0'
 
     def __init__(self):
         self.dsn = os.getenv('DSN')
@@ -46,3 +46,13 @@ class Config:
         self.server_name = os.getenv('SERVER_NAME', 'localhost:8080')
         self.stripe_publishable_key = os.getenv('STRIPE_PUBLISHABLE_KEY')
         self.stripe_secret_key = os.getenv('STRIPE_SECRET_KEY')
+
+    @property
+    def version(self) -> str:
+        """Read version from Dockerfile"""
+        dockerfile = pathlib.Path(__file__).resolve().parent.parent / 'Dockerfile'
+        with open(dockerfile) as f:
+            for line in f:
+                if 'org.label-schema.version' in line:
+                    return line.strip().split('=', maxsplit=1)[1]
+        return 'unknown'

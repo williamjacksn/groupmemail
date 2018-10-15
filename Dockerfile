@@ -1,15 +1,17 @@
 FROM python:3.7.0-alpine3.8
 
-COPY requirements.txt /app/requirements.txt
+COPY requirements-docker.txt /groupmemail/requirements-docker.txt
 
 RUN /sbin/apk --no-cache add --virtual .deps gcc musl-dev postgresql-dev \
  && /sbin/apk --no-cache add libpq \
- && /usr/local/bin/pip install --no-cache-dir --upgrade pip setuptools \
- && /usr/local/bin/pip install --no-cache-dir --requirement /app/requirements.txt \
+ && /usr/local/bin/pip install --no-cache-dir --requirement /groupmemail/requirements-docker.txt \
  && /sbin/apk del .deps
 
-COPY . /app
+COPY . /groupmemail
 
-EXPOSE 8080
 ENTRYPOINT ["/usr/local/bin/python"]
-CMD ["/app/run.py"]
+CMD ["/groupmemail/run.py"]
+
+LABEL maintainer=william@subtlecoolness.com \
+      org.label-schema.schema-version=1.0 \
+      org.label-schema.version=2.1.0

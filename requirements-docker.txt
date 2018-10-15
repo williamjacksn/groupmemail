@@ -1,5 +1,8 @@
 Flask==1.0.2
+pip==18.1
 psycopg2==2.7.5
 requests==2.19.1
-stripe==2.6.0
+setuptools==40.4.3
+stripe==2.10.1
 waitress==1.1.0
+wheel==0.32.1
