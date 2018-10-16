@@ -131,6 +131,7 @@ class GroupMemailDatabase:
                 ALTER TABLE users
                 ADD COLUMN ignored BOOLEAN DEFAULT FALSE
             ''')
+            self.add_schema_version(2)
 
     def set_bad_token_notified(self, user_id: int, bad_token_notified: bool):
         params = {
