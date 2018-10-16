@@ -226,7 +226,9 @@ def reset_callback_urls():
             url_fragment = flask.url_for('incoming', user_id=user_id)
             gm = groupmemail.groupme.GroupMeClient(u['token'])
             bots = gm.bots()
-            for bot in bots.get('response', []):
+            if bots.get('response') is None:
+                continue
+            for bot in bots.get('response'):
                 bot_id = bot.get('bot_id')
                 if url_fragment in bot.get('callback_url'):
                     new_cb_url = external_url('incoming', user_id=u['user_id'])
