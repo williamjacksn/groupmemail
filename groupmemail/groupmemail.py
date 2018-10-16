@@ -146,9 +146,11 @@ def subscribe(group_id):
 
     if not groupmemail.db.expired(db_user['expiration']):
         url = external_url('incoming', user_id=user_id)
+        app.logger.debug(f'User {user_id} ({email}) is subscribing to group {group_id}')
+        app.logger.debug(f'Setting bot callback url to {url}')
         gm.create_bot('GroupMemail', group_id, url)
 
-    return flask.redirect(external_url('index'), code=303)
+    return flask.redirect(flask.url_for('index'), code=303)
 
 
 @app.route('/unsubscribe/<int:group_id>')
@@ -156,21 +158,25 @@ def unsubscribe(group_id):
     if 'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get('groupme_token')
     else:
-        return flask.redirect(external_url('index'), code=303)
+        return flask.redirect(flask.url_for('index'), code=303)
 
     gm = groupmemail.groupme.GroupMeClient(token)
     gm_user = gm.me()
     user_id = gm_user.get('response').get('id')
 
     url = flask.url_for('incoming', user_id=user_id)
+    app.logger.debug(f'User {user_id} wants to unsubscribe from group {group_id}')
+    app.logger.debug(f'Looking for bot with callback url {url}')
 
     bots = gm.bots()
     for bot in bots.get('response'):
         if int(bot.get('group_id')) == group_id:
             if url in bot.get('callback_url'):
-                gm.destroy_bot(bot.get('bot_id'))
+                bot_id = bot.get('bot_id')
+                app.logger.debug(f'Destroying bot with id {bot_id}')
+                gm.destroy_bot(bot_id)
 
-    return flask.redirect(external_url('index'), code=303)
+    return flask.redirect(flask.url_for('index'), code=303)
 
 
 @app.route('/payment')
