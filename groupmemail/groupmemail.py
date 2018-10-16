@@ -59,7 +59,7 @@ def notify_expiration(user_id: int):
 
 
 def external_url(endpoint, **values):
-    return flask.url_for(endpoint, _external=True, **values)
+    return flask.url_for(endpoint, _external=True, _scheme=config.scheme, **values)
 
 
 @app.before_request
