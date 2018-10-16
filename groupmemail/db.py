@@ -103,6 +103,10 @@ class GroupMemailDatabase:
         for record in self._q(sql, {'user_id': user_id}):
             return record
 
+    def get_users(self) -> List[Dict]:
+        sql = 'SELECT user_id, token FROM users'
+        return self._q(sql)
+
     def migrate(self):
         log.info(f'The database is at schema version {self.version}')
         log.info('Checking for database migrations')

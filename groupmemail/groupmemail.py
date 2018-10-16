@@ -206,6 +206,34 @@ def payment():
     return flask.render_template('payment.html')
 
 
+@app.route('/reset-callback-urls')
+def reset_callback_urls():
+    if 'groupme_token' in flask.request.cookies:
+        token = flask.request.cookies.get('groupme_token')
+    else:
+        return flask.redirect(flask.url_for('index'), code=303)
+
+    gm = groupmemail.groupme.GroupMeClient(token)
+    gm_user = gm.me()
+    user = gm_user.get('response')
+    user_id = user.get('user_id')
+    db_user = get_db().get_user_by_id(user_id)
+    email = db_user.get('email')
+    if email == config.admin_email:
+        app.logger.debug('Resetting callback urls ...')
+        for u in get_db().get_users():
+            user_id = u['user_id']
+            url_fragment = flask.url_for('incoming', user_id=user_id)
+            gm = groupmemail.groupme.GroupMeClient(u['token'])
+            for bot in gm.bots():
+                bot_id = bot.get('bot_id')
+                if url_fragment in bot.get('callback_url'):
+                    new_cb_url = external_url('incoming', user_id=u['user_id'])
+                    app.logger.debug(f'Updating bot {bot_id} for user {user_id} with callback url {new_cb_url}')
+                    gm.update_bot(bot_id, bot.get('name'), bot.get('group_id'), new_cb_url)
+    return flask.redirect(flask.url_for('index'), code=303)
+
+
 @app.route('/charge', methods=['POST'])
 def charge():
     if 'groupme_token' in flask.request.cookies:

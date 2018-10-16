@@ -1,6 +1,7 @@
 """
 List of environment variables:
 
+ADMIN_EMAIL
 DSN
 EMAIL_SENDER
 GROUPME_CLIENT_ID
@@ -20,6 +21,7 @@ import pathlib
 
 
 class Config:
+    admin_email: str
     dsn: str
     email_sender: str
     groupme_client_id: str
@@ -34,6 +36,7 @@ class Config:
     stripe_secret_key: str
 
     def __init__(self):
+        self.admin_email = os.getenv('ADMIN_EMAIL')
         self.dsn = os.getenv('DSN')
         self.email_sender = os.getenv('EMAIL_SENDER')
         self.groupme_client_id = os.getenv('GROUPME_CLIENT_ID')
