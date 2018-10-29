@@ -1,2 +1,5 @@
+.git
+.gitignore
+.idea
 docker-compose.override.yml
 run_tests.py
