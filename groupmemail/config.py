@@ -41,7 +41,7 @@ class Config:
         self.email_sender = os.getenv('EMAIL_SENDER')
         self.groupme_client_id = os.getenv('GROUPME_CLIENT_ID')
         self.log_format = os.getenv('LOG_FORMAT', '%(levelname)s [%(name)s] %(message)s')
-        self.log_level = os.getenv('LOG_LEVEL', 'DEBUG')
+        self.log_level = os.getenv('LOG_LEVEL', 'INFO')
         self.mailgun_api_key = os.getenv('MAILGUN_API_KEY')
         self.mailgun_domain = os.getenv('MAILGUN_DOMAIN')
         self.scheme = os.getenv('SCHEME', 'http')
