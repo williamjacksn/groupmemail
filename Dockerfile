@@ -18,6 +18,6 @@ ENV PYTHONUNBUFFERED 1
 
 LABEL maintainer=william@subtlecoolness.com \
       org.label-schema.schema-version=1.0 \
-      org.label-schema.version=2.2.6
+      org.label-schema.version=2.2.7
 
 COPY . /groupmemail
