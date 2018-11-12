@@ -7,12 +7,9 @@ RUN /sbin/apk add --no-cache --virtual .deps gcc musl-dev postgresql-dev \
  && /usr/local/bin/pip install --no-cache-dir --requirement /groupmemail/requirements.txt \
  && /sbin/apk del --no-cache .deps
 
-COPY docker-healthcheck.sh /groupmemail/docker-healthcheck.sh
-RUN chmod +x /groupmemail/docker-healthcheck.sh
-HEALTHCHECK CMD ["/groupmemail/docker-healthcheck.sh"]
-
 ENTRYPOINT ["/usr/local/bin/python"]
 CMD ["/groupmemail/run.py"]
+HEALTHCHECK CMD ["/groupmemail/docker-healthcheck.sh"]
 
 ENV PYTHONUNBUFFERED 1
 
@@ -21,3 +18,4 @@ LABEL maintainer=william@subtlecoolness.com \
       org.label-schema.version=2.2.7
 
 COPY . /groupmemail
+RUN chmod +x /groupmemail/docker-healthcheck.sh
