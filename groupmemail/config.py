@@ -1,21 +1,3 @@
-"""
-List of environment variables:
-
-ADMIN_EMAIL
-DSN
-EMAIL_SENDER
-GROUPME_CLIENT_ID
-LOG_FORMAT
-LOG_LEVEL
-MAILGUN_API_KEY
-MAILGUN_DOMAIN
-SCHEME
-SECRET_KEY
-SERVER_NAME
-STRIPE_PUBLISHABLE_KEY
-STRIPE_SECRET_KEY
-"""
-
 import os
 import pathlib
 
@@ -36,6 +18,18 @@ class Config:
     stripe_secret_key: str
 
     def __init__(self):
+        """Instantiating a Config object will automatically read the following environment variables:
+
+        ADMIN_EMAIL, DSN, EMAIL_SENDER, GROUPME_CLIENT_ID, LOG_FORMAT, LOG_LEVEL, MAILGUN_API_KEY, MAILGUN_DOMAIN,
+        SCHEME, SECRET_KEY, SERVER_NAME, STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY
+
+        Some variables have defaults if they are not found in the environment:
+
+        LOG_FORMAT="%(levelname)s [%(name)s] %(message)s"
+        LOG_LEVEL=INFO
+        SCHEME=http
+        SERVER_NAME=localhost:8080"""
+
         self.admin_email = os.getenv('ADMIN_EMAIL')
         self.dsn = os.getenv('DSN')
         self.email_sender = os.getenv('EMAIL_SENDER')
