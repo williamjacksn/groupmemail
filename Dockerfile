@@ -10,6 +10,8 @@ RUN /sbin/apk add --no-cache --virtual .deps gcc musl-dev postgresql-dev \
 ENTRYPOINT ["/usr/local/bin/python"]
 CMD ["/groupmemail/run.py"]
 
+HEALTHCHECK CMD ["wget", "--spider", "--quiet", "http://localhost:8080/"]
+
 ENV PYTHONUNBUFFERED 1
 
 LABEL maintainer=william@subtlecoolness.com \
