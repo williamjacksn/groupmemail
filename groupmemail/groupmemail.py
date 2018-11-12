@@ -64,7 +64,7 @@ def external_url(endpoint, **values):
 
 @app.before_request
 def log_request():
-    app.logger.info(f'{flask.request.method} {flask.request.path}')
+    app.logger.debug(f'{flask.request.method} {flask.request.path}')
 
 
 @app.route('/ping')
