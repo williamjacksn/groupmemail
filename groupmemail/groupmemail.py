@@ -375,6 +375,10 @@ def main():
     app.logger.debug(f'groupmemail {config.version}')
     app.logger.debug(f'Changing log level to {config.log_level}')
     logging.getLogger().setLevel(config.log_level)
-    with app.app_context():
-        get_db().migrate()
+
+    if config.dsn is None:
+        app.logger.critical('Missing environment variable DSN; the database is unavailable')
+    else:
+        with app.app_context():
+            get_db().migrate()
     waitress.serve(app)

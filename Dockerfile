@@ -7,10 +7,12 @@ RUN /sbin/apk add --no-cache --virtual .deps gcc musl-dev postgresql-dev \
  && /usr/local/bin/pip install --no-cache-dir --requirement /groupmemail/requirements.txt \
  && /sbin/apk del --no-cache .deps
 
+COPY docker-healthcheck.sh /groupmemail/docker-healthcheck.sh
+RUN chmod +x /groupmemail/docker-healthcheck.sh
+HEALTHCHECK CMD ["/groupmemail/docker-healthcheck.sh"]
+
 ENTRYPOINT ["/usr/local/bin/python"]
 CMD ["/groupmemail/run.py"]
-
-HEALTHCHECK CMD ["wget", "--spider", "--quiet", "http://localhost:8080/"]
 
 ENV PYTHONUNBUFFERED 1
 

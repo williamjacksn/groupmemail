@@ -27,8 +27,7 @@ class Config:
 
         LOG_FORMAT="%(levelname)s [%(name)s] %(message)s"
         LOG_LEVEL=INFO
-        SCHEME=http
-        SERVER_NAME=localhost:8080"""
+        SCHEME=http"""
 
         self.admin_email = os.getenv('ADMIN_EMAIL')
         self.dsn = os.getenv('DSN')
@@ -40,7 +39,7 @@ class Config:
         self.mailgun_domain = os.getenv('MAILGUN_DOMAIN')
         self.scheme = os.getenv('SCHEME', 'http')
         self.secret_key = os.getenv('SECRET_KEY')
-        self.server_name = os.getenv('SERVER_NAME', 'localhost:8080')
+        self.server_name = os.getenv('SERVER_NAME')
         self.stripe_publishable_key = os.getenv('STRIPE_PUBLISHABLE_KEY')
         self.stripe_secret_key = os.getenv('STRIPE_SECRET_KEY')
 
