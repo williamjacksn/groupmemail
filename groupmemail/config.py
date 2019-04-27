@@ -16,12 +16,14 @@ class Config:
     server_name: str
     stripe_publishable_key: str
     stripe_secret_key: str
+    stripe_sku: str
+    stripe_webhook_secret: str
 
     def __init__(self):
         """Instantiating a Config object will automatically read the following environment variables:
 
         ADMIN_EMAIL, DSN, EMAIL_SENDER, GROUPME_CLIENT_ID, LOG_FORMAT, LOG_LEVEL, MAILGUN_API_KEY, MAILGUN_DOMAIN,
-        SCHEME, SECRET_KEY, SERVER_NAME, STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY
+        SCHEME, SECRET_KEY, SERVER_NAME, STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, STRIPE_SKU, STRIPE_WEBHOOK_SECRET
 
         Some variables have defaults if they are not found in the environment:
 
@@ -42,6 +44,8 @@ class Config:
         self.server_name = os.getenv('SERVER_NAME')
         self.stripe_publishable_key = os.getenv('STRIPE_PUBLISHABLE_KEY')
         self.stripe_secret_key = os.getenv('STRIPE_SECRET_KEY')
+        self.stripe_sku = os.getenv('STRIPE_SKU')
+        self.stripe_webhook_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
 
     @property
     def version(self) -> str:

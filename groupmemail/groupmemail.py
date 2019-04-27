@@ -5,14 +5,16 @@ import groupmemail.groupme
 import logging
 import requests
 import stripe
-import stripe.error
 import sys
 import waitress
+import werkzeug.middleware.proxy_fix
 
 config = groupmemail.config.Config()
 stripe.api_key = config.stripe_secret_key
 
 app = flask.Flask(__name__)
+app.wsgi_app = werkzeug.middleware.proxy_fix.ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_port=1)
+
 app.secret_key = config.secret_key
 app.config['PREFERRED_URL_SCHEME'] = config.scheme
 app.config['SERVER_NAME'] = config.server_name
@@ -203,6 +205,7 @@ def payment():
 
     flask.g.user = user
     flask.g.stripe_key = config.stripe_publishable_key
+    flask.g.stripe_sku = config.stripe_sku
     return flask.render_template('payment.html')
 
 
@@ -237,32 +240,23 @@ def reset_callback_urls():
     return flask.redirect(flask.url_for('index'), code=303)
 
 
-@app.route('/charge', methods=['POST'])
-def charge():
+@app.route('/stripe-webhook', methods=['POST'])
+def stripe_webhook():
+    app.logger.info('I received a webhook.')
+    return 'OK'
+
+
+@app.route('/payment-success')
+def payment_success():
     if 'groupme_token' in flask.request.cookies:
         token = flask.request.cookies.get('groupme_token')
     else:
         return flask.redirect(external_url('index'), code=303)
 
-    amount = 600
-
     gm = groupmemail.groupme.GroupMeClient(token)
     gm_user = gm.me()
     user = gm_user.get('response')
     user_id = user.get('user_id')
-
-    card = flask.request.form.get('stripeToken')
-    customer = stripe.Customer.create(email=user.get('email'), card=card)
-
-    try:
-        stripe.Charge.create(
-            customer=customer.id,
-            amount=amount,
-            currency='usd',
-            description='GroupMemail Service: 6 months'
-        )
-    except stripe.error.CardError:
-        return flask.redirect(external_url('index'), code=303)
 
     get_db().extend(user_id, 180)
 
@@ -381,4 +375,4 @@ def main():
     else:
         with app.app_context():
             get_db().migrate()
-    waitress.serve(app)
+    waitress.serve(app, ident=None)
