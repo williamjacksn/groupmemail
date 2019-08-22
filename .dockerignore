@@ -1,5 +1,6 @@
 .git
 .gitignore
 .idea
+checkout.session.completed.json
 docker-compose.override.yml
 run_tests.py

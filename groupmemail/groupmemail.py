@@ -5,6 +5,7 @@ import groupmemail.groupme
 import logging
 import requests
 import stripe
+import stripe.error
 import sys
 import waitress
 import werkzeug.middleware.proxy_fix
@@ -242,7 +243,17 @@ def reset_callback_urls():
 
 @app.route('/stripe-webhook', methods=['POST'])
 def stripe_webhook():
-    app.logger.info('I received a webhook.')
+    sig_header = flask.request.headers.get('stripe-signature')
+    event = None
+    try:
+        event = stripe.Webhook.construct_event(flask.request.data, sig_header, config.stripe_webhook_secret)
+    except ValueError as e:
+        app.logger.warning(f'Invalid webhook payload: {e}')
+        flask.abort(404)
+    except stripe.error.SignatureVerificationError as e:
+        app.logger.warning(f'Invalid webhook signature: {e}')
+        flask.abort(404)
+    app.logger.info(f'I received a webhook: {event.type}')
     return 'OK'
 
 

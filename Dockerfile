@@ -1,4 +1,4 @@
-FROM python:3.7.3-alpine3.9
+FROM python:3.7.4-alpine3.10
 
 COPY requirements.txt /groupmemail/requirements.txt
 
@@ -11,11 +11,10 @@ ENTRYPOINT ["/usr/local/bin/python"]
 CMD ["/groupmemail/run.py"]
 HEALTHCHECK CMD ["/groupmemail/docker-healthcheck.sh"]
 
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONUNBUFFERED="1"
 
-LABEL maintainer=william@subtlecoolness.com \
-      org.label-schema.schema-version=1.0 \
-      org.label-schema.version=2.2.9
+LABEL org.opencontainers.image.authors="William Jackson <william@subtlecoolness.com>" \
+      org.opencontainers.image.version=2.2.9
 
 COPY . /groupmemail
 RUN chmod +x /groupmemail/docker-healthcheck.sh
