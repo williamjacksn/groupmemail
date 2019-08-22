@@ -14,7 +14,7 @@ HEALTHCHECK CMD ["/groupmemail/docker-healthcheck.sh"]
 ENV PYTHONUNBUFFERED="1"
 
 LABEL org.opencontainers.image.authors="William Jackson <william@subtlecoolness.com>" \
-      org.opencontainers.image.version=2.2.9
+      org.opencontainers.image.version=3.0.0
 
 COPY . /groupmemail
 RUN chmod +x /groupmemail/docker-healthcheck.sh
