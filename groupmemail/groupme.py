@@ -2,7 +2,7 @@ import json
 import requests
 
 
-class GroupMeClient(object):
+class GroupMeClient:
     def __init__(self, token):
         self.params = {'token': token}
 

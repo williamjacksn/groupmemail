@@ -1,4 +1,5 @@
 import flask
+import functools
 import groupmemail.config
 import groupmemail.db
 import groupmemail.groupme
@@ -21,16 +22,20 @@ app.config['PREFERRED_URL_SCHEME'] = config.scheme
 app.config['SERVER_NAME'] = config.server_name
 
 
-def get_db():
-    db = flask.g.get('db')
-    if db is None:
-        db = groupmemail.db.GroupMemailDatabase(config.dsn)
-        flask.g.db = db
-    return db
+def login_required(f):
+    @functools.wraps(f)
+    def decorated_function(*args, **kwargs):
+        groupme_token = flask.session.get('groupme_token')
+        app.logger.debug(f'Checking login, groupme_token: {groupme_token}')
+        if groupme_token is None:
+            return flask.redirect(flask.url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 def notify_bad_token(user_id: int):
-    user = get_db().get_user_by_id(user_id)
+    db = groupmemail.db.GroupMemailDatabase(config.dsn)
+    user = db.get_user_by_id(user_id)
     html_body = flask.render_template('email_problem.html')
     requests.post(
         f'https://api.mailgun.net/v3/{config.mailgun_domain}/messages',
@@ -42,11 +47,12 @@ def notify_bad_token(user_id: int):
             'html': html_body
         }
     )
-    get_db().set_bad_token_notified(user_id, True)
+    db.set_bad_token_notified(user_id, True)
 
 
 def notify_expiration(user_id: int):
-    user = get_db().get_user_by_id(user_id)
+    db = groupmemail.db.GroupMemailDatabase(config.dsn)
+    user = db.get_user_by_id(user_id)
     html_body = flask.render_template('email_expired.html', expiration=user['expiration'])
     requests.post(
         f'https://api.mailgun.net/v3/{config.mailgun_domain}/messages',
@@ -58,7 +64,7 @@ def notify_expiration(user_id: int):
             'html': html_body
         }
     )
-    get_db().set_expiration_notified(user_id, True)
+    db.set_expiration_notified(user_id, True)
 
 
 def external_url(endpoint, **values):
@@ -66,7 +72,7 @@ def external_url(endpoint, **values):
 
 
 @app.before_request
-def log_request():
+def before_request():
     app.logger.debug(f'{flask.request.method} {flask.request.path}')
 
 
@@ -77,28 +83,28 @@ def ping():
 
 @app.route('/')
 def index():
-    if 'groupme_token' in flask.request.cookies:
-        token = flask.request.cookies.get('groupme_token')
-    else:
+    groupme_token = flask.session.get('groupme_token')
+    if groupme_token is None:
         flask.g.cid = config.groupme_client_id
         return flask.render_template('landing.html')
 
-    gm = groupmemail.groupme.GroupMeClient(token)
+    db = groupmemail.db.GroupMemailDatabase(config.dsn)
+    gm = groupmemail.groupme.GroupMeClient(groupme_token)
     gm_user = gm.me()
     user = gm_user.get('response')
     user_id = user.get('user_id')
-    db_user = get_db().get_user_by_id(user_id)
+    db_user = db.get_user_by_id(user_id)
     if db_user is None:
         msg = 'Subscribe to a group to get free service for 30 days.'
     else:
-        if db_user['token'] != token:
-            get_db().set_token(user_id, token)
+        if db_user['token'] != groupme_token:
+            db.set_token(user_id, groupme_token)
         if groupmemail.db.expired(db_user['expiration']):
             msg = 'Your GroupMemail service expired on {}.'
         else:
             msg = 'Your GroupMemail service will expire on {}.'
         msg = msg.format(db_user['expiration'].strftime('%d %B %Y'))
-        get_db().set_bad_token_notified(user_id, False)
+        db.set_bad_token_notified(user_id, False)
     user['expiration_msg'] = msg
     flask.g.user = user
     return flask.render_template('list.html')
@@ -106,46 +112,34 @@ def index():
 
 @app.route('/login')
 def login():
-    index_url = external_url('index')
-    resp = flask.make_response(flask.redirect(index_url, code=303))
-
-    if 'groupme_token' in flask.request.cookies:
-        token = flask.request.cookies.get('groupme_token')
-        resp.set_cookie('groupme_token', token)
-
-    if 'access_token' in flask.request.args:
-        token = flask.request.args.get('access_token')
-        resp.set_cookie('groupme_token', token)
-
-    return resp
+    if 'access_token' in flask.request.values:
+        groupme_token = flask.request.values.get('access_token')
+        flask.session['groupme_token'] = groupme_token
+    return flask.redirect(flask.url_for('index'))
 
 
 @app.route('/logout')
 def logout():
-    index_url = external_url('index')
-    resp = flask.make_response(flask.redirect(index_url, code=303))
-    resp.delete_cookie('groupme_token')
-    return resp
+    flask.session.pop('groupme_token')
+    return flask.redirect(flask.url_for('index'))
 
 
 @app.route('/subscribe/<int:group_id>')
+@login_required
 def subscribe(group_id):
-    if 'groupme_token' in flask.request.cookies:
-        token = flask.request.cookies.get('groupme_token')
-    else:
-        return flask.redirect(external_url('index'), code=303)
-
-    gm = groupmemail.groupme.GroupMeClient(token)
+    groupme_token = flask.session.get('groupme_token')
+    gm = groupmemail.groupme.GroupMeClient(groupme_token)
     gm_user = gm.me()
     user_id = gm_user.get('response').get('id')
     email = gm_user.get('response').get('email')
 
-    db_user = get_db().get_user_by_id(user_id)
+    db = groupmemail.db.GroupMemailDatabase(config.dsn)
+    db_user = db.get_user_by_id(user_id)
     if db_user is None:
-        db_user = get_db().create_user(user_id, email, token)
+        db_user = db.create_user(user_id, email, groupme_token)
 
-    if db_user['token'] != token:
-        get_db().set_token(user_id, token)
+    if db_user['token'] != groupme_token:
+        db.set_token(user_id, groupme_token)
 
     if not groupmemail.db.expired(db_user['expiration']):
         url = external_url('incoming', user_id=user_id)
@@ -157,13 +151,10 @@ def subscribe(group_id):
 
 
 @app.route('/unsubscribe/<int:group_id>')
+@login_required
 def unsubscribe(group_id):
-    if 'groupme_token' in flask.request.cookies:
-        token = flask.request.cookies.get('groupme_token')
-    else:
-        return flask.redirect(flask.url_for('index'), code=303)
-
-    gm = groupmemail.groupme.GroupMeClient(token)
+    groupme_token = flask.session.get('groupme_token')
+    gm = groupmemail.groupme.GroupMeClient(groupme_token)
     gm_user = gm.me()
     user_id = gm_user.get('response').get('id')
 
@@ -183,17 +174,15 @@ def unsubscribe(group_id):
 
 
 @app.route('/payment')
+@login_required
 def payment():
-    if 'groupme_token' in flask.request.cookies:
-        token = flask.request.cookies.get('groupme_token')
-    else:
-        return flask.redirect(external_url('index'), code=303)
-
-    gm = groupmemail.groupme.GroupMeClient(token)
+    groupme_token = flask.session.get('groupme_token')
+    gm = groupmemail.groupme.GroupMeClient(groupme_token)
     gm_user = gm.me()
     user = gm_user.get('response')
     user_id = user.get('user_id')
-    db_user = get_db().get_user_by_id(user_id)
+    db = groupmemail.db.GroupMemailDatabase(config.dsn)
+    db_user = db.get_user_by_id(user_id)
     if db_user is None:
         msg = 'Subscribe to a group to get free service for 30 days.'
     else:
@@ -211,21 +200,19 @@ def payment():
 
 
 @app.route('/reset-callback-urls')
+@login_required
 def reset_callback_urls():
-    if 'groupme_token' in flask.request.cookies:
-        token = flask.request.cookies.get('groupme_token')
-    else:
-        return flask.redirect(flask.url_for('index'), code=303)
-
-    gm = groupmemail.groupme.GroupMeClient(token)
+    groupme_token = flask.session.get('groupme_token')
+    gm = groupmemail.groupme.GroupMeClient(groupme_token)
     gm_user = gm.me()
     user = gm_user.get('response')
     user_id = user.get('user_id')
-    db_user = get_db().get_user_by_id(user_id)
+    db = groupmemail.db.GroupMemailDatabase(config.dsn)
+    db_user = db.get_user_by_id(user_id)
     email = db_user.get('email')
     if email == config.admin_email:
         app.logger.debug('Resetting callback urls ...')
-        for u in get_db().get_users():
+        for u in db.get_users():
             user_id = u['user_id']
             url_fragment = flask.url_for('incoming', user_id=user_id)
             gm = groupmemail.groupme.GroupMeClient(u['token'])
@@ -258,25 +245,24 @@ def stripe_webhook():
 
 
 @app.route('/payment-success')
+@login_required
 def payment_success():
-    if 'groupme_token' in flask.request.cookies:
-        token = flask.request.cookies.get('groupme_token')
-    else:
-        return flask.redirect(external_url('index'), code=303)
-
-    gm = groupmemail.groupme.GroupMeClient(token)
+    groupme_token = flask.session.get('groupme_token')
+    gm = groupmemail.groupme.GroupMeClient(groupme_token)
     gm_user = gm.me()
     user = gm_user.get('response')
     user_id = user.get('user_id')
 
-    get_db().extend(user_id, 180)
+    db = groupmemail.db.GroupMemailDatabase(config.dsn)
+    db.extend(user_id, 180)
 
-    return flask.redirect(external_url('index'), code=303)
+    return flask.redirect(flask.url_for('index'), code=303)
 
 
 @app.route('/incoming/<int:user_id>', methods=['POST'])
 def incoming(user_id):
-    user = get_db().get_user_by_id(user_id)
+    db = groupmemail.db.GroupMemailDatabase(config.dsn)
+    user = db.get_user_by_id(user_id)
     if user is None:
         app.logger.error(f'{user_id} is not a known user_id')
         flask.abort(404)
@@ -355,16 +341,17 @@ def incoming(user_id):
 
 @app.route('/email', methods=['POST'])
 def handle_email():
-    source = flask.request.form.get('sender')
-    dest = flask.request.form.get('recipient').split('@')[0]
-    text = flask.request.form.get('stripped-text')
+    source = flask.request.values.get('sender')
+    dest = flask.request.values.get('recipient').split('@')[0]
+    text = flask.request.values.get('stripped-text')
     tokens = [line.strip() for line in text.splitlines()]
     if '' in tokens:
         empty_line_index = tokens.index('')
         tokens = tokens[:empty_line_index]
     message = ' '.join(tokens)
 
-    user = get_db().get_user_by_email(source)
+    db = groupmemail.db.GroupMemailDatabase(config.dsn)
+    user = db.get_user_by_email(source)
     if user is None:
         app.logger.error(f'Received mail from unknown address: {source}')
         flask.abort(406)
@@ -384,6 +371,6 @@ def main():
     if config.dsn is None:
         app.logger.critical('Missing environment variable DSN; the database is unavailable')
     else:
-        with app.app_context():
-            get_db().migrate()
+        groupmemail.db.GroupMemailDatabase(config.dsn).migrate()
+
     waitress.serve(app, ident=None)
