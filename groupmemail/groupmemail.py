@@ -344,6 +344,10 @@ def handle_email():
     source = flask.request.values.get('sender')
     dest = flask.request.values.get('recipient').split('@')[0]
     text = flask.request.values.get('stripped-text')
+    if text is None:
+        app.logger.warning(f'Email from {source} to {dest} does not have stripped-text')
+        return 'Thank you.'
+
     tokens = [line.strip() for line in text.splitlines()]
     if '' in tokens:
         empty_line_index = tokens.index('')
