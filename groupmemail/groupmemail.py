@@ -346,6 +346,7 @@ def handle_email():
     text = flask.request.values.get('stripped-text')
     if text is None:
         app.logger.warning(f'Email from {source} to {dest} does not have stripped-text')
+        app.logger.debug(flask.request.values)
         return 'Thank you.'
 
     app.logger.info(f'Handling email from {source} to {dest}')
@@ -359,7 +360,8 @@ def handle_email():
     db = groupmemail.db.GroupMemailDatabase(config.dsn)
     user = db.get_user_by_email(source)
     if user is None:
-        app.logger.error(f'Received mail from unknown address: {source}')
+        app.logger.error(f'Received email from unknown address: {source}')
+        app.logger.debug(flask.request.values)
         flask.abort(406)
 
     gm = groupmemail.groupme.GroupMeClient(user['token'])
