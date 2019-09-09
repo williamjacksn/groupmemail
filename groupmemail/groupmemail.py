@@ -73,7 +73,7 @@ def external_url(endpoint, **values):
 
 @app.before_request
 def before_request():
-    app.logger.debug(f'{flask.request.method} {flask.request.path}')
+    app.logger.info(f'{flask.request.method} {flask.request.path}')
 
 
 @app.route('/ping')
@@ -347,6 +347,8 @@ def handle_email():
     if text is None:
         app.logger.warning(f'Email from {source} to {dest} does not have stripped-text')
         return 'Thank you.'
+
+    app.logger.info(f'Handling email from {source} to {dest}')
 
     tokens = [line.strip() for line in text.splitlines()]
     if '' in tokens:
