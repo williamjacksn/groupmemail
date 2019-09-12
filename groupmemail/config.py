@@ -1,5 +1,4 @@
 import os
-import pathlib
 
 
 class Config:
@@ -18,12 +17,14 @@ class Config:
     stripe_secret_key: str
     stripe_sku: str
     stripe_webhook_secret: str
+    version: str
 
     def __init__(self):
         """Instantiating a Config object will automatically read the following environment variables:
 
-        ADMIN_EMAIL, DSN, EMAIL_SENDER, GROUPME_CLIENT_ID, LOG_FORMAT, LOG_LEVEL, MAILGUN_API_KEY, MAILGUN_DOMAIN,
-        SCHEME, SECRET_KEY, SERVER_NAME, STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, STRIPE_SKU, STRIPE_WEBHOOK_SECRET
+        ADMIN_EMAIL, APP_VERSION, DSN, EMAIL_SENDER, GROUPME_CLIENT_ID, LOG_FORMAT, LOG_LEVEL, MAILGUN_API_KEY,
+        MAILGUN_DOMAIN, SCHEME, SECRET_KEY, SERVER_NAME, STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, STRIPE_SKU,
+        STRIPE_WEBHOOK_SECRET
 
         Some variables have defaults if they are not found in the environment:
 
@@ -46,13 +47,4 @@ class Config:
         self.stripe_secret_key = os.getenv('STRIPE_SECRET_KEY')
         self.stripe_sku = os.getenv('STRIPE_SKU')
         self.stripe_webhook_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
-
-    @property
-    def version(self) -> str:
-        """Read version from Dockerfile"""
-        dockerfile = pathlib.Path(__file__).resolve().parent.parent / 'Dockerfile'
-        with open(dockerfile) as f:
-            for line in f:
-                if 'org.opencontainers.image.version' in line:
-                    return line.strip().split('=', maxsplit=1)[1]
-        return 'unknown'
+        self.version = os.getenv('APP_VERSION', 'unknown')

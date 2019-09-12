@@ -11,10 +11,11 @@ ENTRYPOINT ["/usr/local/bin/python"]
 CMD ["/groupmemail/run.py"]
 HEALTHCHECK CMD ["/groupmemail/docker-healthcheck.sh"]
 
-ENV PYTHONUNBUFFERED="1"
+ENV APP_VERSION="3.0.3" \
+    PYTHONUNBUFFERED="1"
 
 LABEL org.opencontainers.image.authors="William Jackson <william@subtlecoolness.com>" \
-      org.opencontainers.image.version=3.0.3
+      org.opencontainers.image.version=${APP_VERSION}
 
 COPY . /groupmemail
 RUN chmod +x /groupmemail/docker-healthcheck.sh
