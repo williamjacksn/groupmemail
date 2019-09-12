@@ -86,21 +86,26 @@ class GroupMemailDatabase:
             return record['token']
 
     def get_user_by_email(self, email: str) -> Optional[Dict]:
+        log.debug(f'Looking for user with email {email}')
         params = {'email': email}
 
         # does this email exist in the users table?
         sql = 'SELECT email FROM users WHERE email = %(email)s'
         rows = self._q(sql, params)
-        if rows is None:
+        if not rows:
             # no, check the alt_emails table
+            log.debug(f'{email} is not a primary email address, checking alternate emails')
             sql = 'SELECT primary_email FROM alt_emails WHERE alt_email = %(email)s'
             rows = self._q(sql, params)
-            if rows is None:
+            if not rows:
                 # this isn't an alt email either
+                log.debug(f'{email} is not an alternate email either')
                 return None
             else:
                 # this is an alt email
-                params['email'] = rows[0]['primary_email']
+                primary_email = rows[0]['primary_email']
+                log.debug(f'{email} is an alternate for {primary_email}')
+                params['email'] = primary_email
 
         sql = '''
             SELECT bad_token_notified, email, expiration, expiration_notified, ignored, token, user_id
