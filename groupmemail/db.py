@@ -86,13 +86,29 @@ class GroupMemailDatabase:
             return record['token']
 
     def get_user_by_email(self, email: str) -> Optional[Dict]:
+        params = {'email': email}
+
+        # does this email exist in the users table?
+        sql = 'SELECT email FROM users WHERE email = %(email)s'
+        rows = self._q(sql, params)
+        if rows is None:
+            # no, check the alt_emails table
+            sql = 'SELECT primary_email FROM alt_emails WHERE alt_email = %(email)s'
+            rows = self._q(sql, params)
+            if rows is None:
+                # this isn't an alt email either
+                return None
+            else:
+                # this is an alt email
+                params['email'] = rows[0]['primary_email']
+
         sql = '''
             SELECT bad_token_notified, email, expiration, expiration_notified, ignored, token, user_id
             FROM users
             WHERE email = %(email)s
         '''
-        for record in self._q(sql, {'email': email}):
-            return record
+        rows = self._q(sql, params)
+        return rows[0]
 
     def get_user_by_id(self, user_id: int) -> Optional[Dict]:
         sql = '''
@@ -136,6 +152,15 @@ class GroupMemailDatabase:
                 ADD COLUMN ignored BOOLEAN DEFAULT FALSE
             ''')
             self.add_schema_version(2)
+        if self.version < 3:
+            log.info('Migrating from version 2 to version 3')
+            self._u('''
+                CREATE TABLE IF NOT EXISTS alt_emails (
+                    alt_email TEXT PRIMARY KEY,
+                    primary_email TEXT
+                )
+            ''')
+            self.add_schema_version(3)
 
     def set_bad_token_notified(self, user_id: int, bad_token_notified: bool):
         params = {
