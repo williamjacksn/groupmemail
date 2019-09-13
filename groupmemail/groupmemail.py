@@ -339,9 +339,17 @@ def incoming(user_id):
     return 'Thank you.'
 
 
+def get_canonical_email(email: str) -> str:
+    """Canonicalize an email address. Currently this means removing any plus-codes from the username part."""
+    username, _, domain = email.partition('@')
+    username, _, _ = username.partition('+')
+    canonical_email = f'{username}@{domain}'.lower()
+    return canonical_email
+
+
 @app.route('/email', methods=['POST'])
 def handle_email():
-    source = flask.request.values.get('sender')
+    source = get_canonical_email(flask.request.values.get('sender'))
     dest = flask.request.values.get('recipient').split('@')[0]
     text = flask.request.values.get('stripped-text')
     if text is None:
