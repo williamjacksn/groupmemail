@@ -1,4 +1,3 @@
 docker-compose.override.yml
-.env
 .idea
-run_tests.py
+__pycache__
