@@ -3,4 +3,4 @@ version: '3'
 services:
   groupmemail:
     build: .
-    image: williamjackson/groupmemail
+    image: docker.pkg.github.com/williamjacksn/groupmemail/groupmemail
