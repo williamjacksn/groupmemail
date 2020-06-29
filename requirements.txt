@@ -1,6 +1,6 @@
 Flask==1.1.2
 Werkzeug==0.16.0
 psycopg2==2.8.5
-requests==2.22.0
+requests==2.24.0
 stripe==2.48.0
 waitress==1.4.4
