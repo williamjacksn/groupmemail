@@ -2,10 +2,8 @@ FROM python:3.8.5-alpine3.12
 
 COPY requirements.txt /groupmemail/requirements.txt
 
-RUN /sbin/apk add --no-cache --virtual .deps gcc musl-dev postgresql-dev \
- && /sbin/apk add --no-cache libpq \
- && /usr/local/bin/pip install --no-cache-dir --requirement /groupmemail/requirements.txt \
- && /sbin/apk del --no-cache .deps
+RUN /sbin/apk add --no-cache libpq
+RUN /usr/local/bin/pip install --no-cache-dir --requirement /groupmemail/requirements.txt
 
 ENTRYPOINT ["/usr/local/bin/python"]
 CMD ["/groupmemail/run.py"]
