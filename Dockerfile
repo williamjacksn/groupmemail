@@ -9,7 +9,7 @@ ENTRYPOINT ["/usr/local/bin/python"]
 CMD ["/groupmemail/run.py"]
 HEALTHCHECK CMD ["/groupmemail/docker-healthcheck.sh"]
 
-ENV APP_VERSION="2020.3" \
+ENV APP_VERSION="2020.4" \
     PYTHONUNBUFFERED="1"
 
 LABEL org.opencontainers.image.authors="William Jackson <william@subtlecoolness.com>" \
