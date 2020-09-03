@@ -6,7 +6,7 @@
 
 {% for attachment in j.attachments %}
     {% if attachment.type == 'image' %}
-        <p><img style="max-width:99%" src="{{ attachment.url }}" /></p>
+        <p><img style="max-width:99%" src="{{ attachment.url }}" alt="An image posted to GroupMe" /></p>
     {% endif%}
 {% endfor %}
 
