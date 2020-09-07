@@ -1,7 +1,7 @@
 --extra-index-url https://alpine-wheels.github.io/index
 Flask==1.1.2
 Werkzeug==1.0.1
-psycopg2==2.8.5
+psycopg2==2.8.6
 requests==2.24.0
 stripe==2.51.0
 waitress==1.4.4
