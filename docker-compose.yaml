@@ -2,5 +2,4 @@ version: '3.8'
 
 services:
   groupmemail:
-    build: .
-    image: docker.pkg.github.com/williamjacksn/groupmemail/groupmemail
+    image: ghcr.io/williamjacksn/groupmemail
