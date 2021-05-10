@@ -288,7 +288,7 @@ def incoming(user_id):
     if groupmemail.db.expired(expiration):
         app.logger.error(f'user_id {user_id} expired on {expiration}')
         url = flask.url_for('incoming', user_id=user_id)
-        for bot in gm.bots().get('response'):
+        for bot in gm.bots().get('response', []):
             if int(bot.get('group_id')) == int(j.get('group_id')):
                 if url in bot.get('callback_url'):
                     gm.destroy_bot(bot.get('bot_id'))
