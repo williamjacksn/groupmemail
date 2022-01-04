@@ -24,7 +24,7 @@ markupsafe==2.0.0
     # via jinja2
 psycopg2==2.9.3
     # via -r requirements.in
-requests==2.26.0
+requests==2.27.0
     # via
     #   -r requirements.in
     #   stripe
