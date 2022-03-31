@@ -28,7 +28,7 @@ requests==2.27.1
     # via
     #   -r requirements.in
     #   stripe
-stripe==2.68.0
+stripe==2.70.0
     # via -r requirements.in
 urllib3==1.26.5
     # via requests
