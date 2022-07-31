@@ -32,9 +32,9 @@ requests==2.28.1
     #   stripe
 stripe==4.0.0
     # via -r requirements.in
-urllib3==1.26.10
+urllib3==1.26.11
     # via requests
 waitress==2.1.2
     # via -r requirements.in
-werkzeug==2.2.0
+werkzeug==2.2.1
     # via flask
