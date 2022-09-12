@@ -28,5 +28,14 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
+  shell:
+    entrypoint:
+      - /bin/sh
+    image: ghcr.io/williamjacksn/groupmemail
+    init: true
+    volumes:
+      - ./:/home/python/groupmemail
+    working_dir: /home/python/groupmemail
+
 volumes:
   postgres-data:
