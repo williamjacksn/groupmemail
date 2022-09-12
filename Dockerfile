@@ -1,19 +1,24 @@
 FROM python:3.10.7-alpine3.16
 
-COPY requirements.txt /groupmemail/requirements.txt
-
 RUN /sbin/apk add --no-cache libpq
-RUN /usr/local/bin/pip install --no-cache-dir --requirement /groupmemail/requirements.txt
+RUN /usr/sbin/adduser -g python -D python
 
-ENTRYPOINT ["/usr/local/bin/python"]
-CMD ["/groupmemail/run.py"]
-HEALTHCHECK CMD ["/groupmemail/docker-healthcheck.sh"]
+USER python
+RUN /usr/local/bin/python -m venv /home/python/venv
+
+COPY --chown=python:python requirements.txt /home/python/groupmemail/requirements.txt
+RUN /home/python/venv/bin/pip install --no-cache-dir --requirement /home/python/groupmemail/requirements.txt
+
+ENTRYPOINT ["/home/python/venv/bin/python", "/home/python/groupmemail/run.py"]
 
 ENV APP_VERSION="2022.1" \
-    PYTHONUNBUFFERED="1"
+    PATH="/home/python/venv/bin:${PATH}"
+    PYTHONDONTWRITEBYTECODE="1" \
+    PYTHONUNBUFFERED="1" \
+    TZ="Etc/UTC"
 
 LABEL org.opencontainers.image.authors="William Jackson <william@subtlecoolness.com>" \
       org.opencontainers.image.version="${APP_VERSION}"
 
-COPY . /groupmemail
-RUN chmod +x /groupmemail/docker-healthcheck.sh
+COPY --chown=python:python run.py /home/python/groupmemail/run.py
+COPY --chown=python:python groupmemail /home/python/groupmemail/groupmemail
