@@ -11,7 +11,7 @@ RUN /home/python/venv/bin/pip install --no-cache-dir --requirement /home/python/
 
 ENTRYPOINT ["/home/python/venv/bin/python", "/home/python/groupmemail/run.py"]
 
-ENV APP_VERSION="2022.2" \
+ENV APP_VERSION="2022.3" \
     PATH="/home/python/venv/bin:${PATH}" \
     PYTHONDONTWRITEBYTECODE="1" \
     PYTHONUNBUFFERED="1" \
