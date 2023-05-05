@@ -28,7 +28,7 @@ markupsafe==2.1.2
     #   werkzeug
 psycopg2==2.9.6
     # via -r requirements.in
-requests==2.29.0
+requests==2.30.0
     # via -r requirements.in
 urllib3==1.26.15
     # via requests
