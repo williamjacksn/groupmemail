@@ -2,7 +2,6 @@ services:
   groupmemail:
     build: .
     environment:
-      ADMIN_EMAIL: (set in compose.override.yaml)
       DSN: postgres://postgres:postgres@postgres/postgres
       EMAIL_SENDER: (set in compose.override.yaml)
       GROUPME_CLIENT_ID: (set in compose.override.yaml)

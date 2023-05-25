@@ -2,7 +2,6 @@ import os
 
 
 class Config:
-    admin_email: str
     dsn: str
     email_sender: str
     groupme_client_id: str
@@ -22,9 +21,8 @@ class Config:
     def __init__(self):
         """Instantiating a Config object will automatically read the following environment variables:
 
-        ADMIN_EMAIL, APP_VERSION, DSN, EMAIL_SENDER, GROUPME_CLIENT_ID, LOG_FORMAT, LOG_LEVEL, MAILGUN_API_KEY,
-        MAILGUN_DOMAIN, SCHEME, SECRET_KEY, SERVER_NAME, STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, STRIPE_SKU,
-        STRIPE_WEBHOOK_SECRET
+        APP_VERSION, DSN, EMAIL_SENDER, GROUPME_CLIENT_ID, LOG_FORMAT, LOG_LEVEL, MAILGUN_API_KEY, MAILGUN_DOMAIN,
+        SCHEME, SECRET_KEY, SERVER_NAME, STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, STRIPE_SKU, STRIPE_WEBHOOK_SECRET
 
         Some variables have defaults if they are not found in the environment:
 
@@ -32,7 +30,6 @@ class Config:
         LOG_LEVEL=INFO
         SCHEME=http"""
 
-        self.admin_email = os.getenv('ADMIN_EMAIL')
         self.dsn = os.getenv('DSN')
         self.email_sender = os.getenv('EMAIL_SENDER')
         self.groupme_client_id = os.getenv('GROUPME_CLIENT_ID')
