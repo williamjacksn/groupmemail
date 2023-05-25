@@ -2,7 +2,6 @@ services:
   groupmemail:
     build: .
     environment:
-      EMAIL_SENDER: (set in compose.override.yaml)
       GROUPME_CLIENT_ID: (set in compose.override.yaml)
       MAILGUN_API_KEY: (set in compose.override.yaml)
       MAILGUN_DOMAIN: (set in compose.override.yaml)
