@@ -1,6 +1,4 @@
 --extra-index-url https://alpine-wheels.github.io/index
 
 flask
-psycopg2
-requests
 waitress

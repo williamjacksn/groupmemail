@@ -1,7 +1,5 @@
 import flask
 import groupmemail.config
-import groupmemail.db
-import groupmemail.groupme
 import logging
 import sys
 import waitress
@@ -47,10 +45,5 @@ def main():
     app.logger.debug(f'groupmemail {config.version}')
     app.logger.debug(f'Changing log level to {config.log_level}')
     logging.getLogger().setLevel(config.log_level)
-
-    if config.dsn is None:
-        app.logger.critical('Missing environment variable DSN; the database is unavailable')
-    else:
-        groupmemail.db.GroupMemailDatabase(config.dsn).migrate()
 
     waitress.serve(app, ident=None)
