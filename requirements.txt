@@ -22,5 +22,5 @@ markupsafe==2.1.2
     #   werkzeug
 waitress==2.1.2
     # via -r requirements.in
-werkzeug==2.3.3
+werkzeug==2.3.4
     # via flask
