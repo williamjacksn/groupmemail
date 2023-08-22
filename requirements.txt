@@ -10,7 +10,7 @@ blinker==1.6.2
     # via flask
 click==8.1.6
     # via flask
-flask==2.3.2
+flask==2.3.3
     # via -r requirements.in
 itsdangerous==2.1.2
     # via flask
@@ -22,5 +22,5 @@ markupsafe==2.1.3
     #   werkzeug
 waitress==2.1.2
     # via -r requirements.in
-werkzeug==2.3.6
+werkzeug==2.3.7
     # via flask
