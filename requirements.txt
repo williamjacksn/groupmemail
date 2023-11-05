@@ -6,7 +6,7 @@
 #
 --extra-index-url https://alpine-wheels.github.io/index
 
-blinker==1.6.3
+blinker==1.7.0
     # via flask
 click==8.1.7
     # via flask
