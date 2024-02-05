@@ -20,7 +20,7 @@ markupsafe==2.1.5
     # via
     #   jinja2
     #   werkzeug
-waitress==2.1.2
+waitress==3.0.0
     # via -r requirements.in
 werkzeug==3.0.1
     # via flask
