@@ -12,7 +12,7 @@ services:
 
   shell:
     entrypoint:
-      - /bin/sh
+      - /bin/bash
     image: ghcr.io/williamjacksn/groupmemail
     init: true
     volumes:
