@@ -10,14 +10,6 @@ services:
     ports:
       - 8080:8080
 
-  postgres:
-    environment:
-      POSTGRES_PASSWORD: postgres
-      PGDATA: /var/lib/postgresl/data/11
-    image: postgres:11.11-alpine
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-
   shell:
     entrypoint:
       - /bin/sh
@@ -26,6 +18,3 @@ services:
     volumes:
       - ./:/home/python/groupmemail
     working_dir: /home/python/groupmemail
-
-volumes:
-  postgres-data:
