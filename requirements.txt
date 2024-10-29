@@ -18,7 +18,7 @@ markupsafe==3.0.1
     # via
     #   jinja2
     #   werkzeug
-waitress==3.0.0
+waitress==3.0.1
     # via -r requirements.in
 werkzeug==3.0.4
     # via flask
