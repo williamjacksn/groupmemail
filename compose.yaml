@@ -10,15 +10,6 @@ services:
     ports:
       - 8080:8080
 
-  pip-compile:
-    entrypoint:
-      - /home/python/venv/bin/pip-compile
-    image: ghcr.io/williamjacksn/pip-tools:py3.13
-    init: true
-    volumes:
-      - ./:/home/python/groupmemail
-    working_dir: /home/python/groupmemail
-
   shell:
     entrypoint:
       - /bin/bash
