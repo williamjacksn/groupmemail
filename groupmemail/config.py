@@ -20,9 +20,11 @@ class Config:
         LOG_LEVEL=INFO
         SCHEME=http"""
 
-        self.log_format = os.getenv('LOG_FORMAT', '%(levelname)s [%(name)s] %(message)s')
-        self.log_level = os.getenv('LOG_LEVEL', 'INFO')
-        self.scheme = os.getenv('SCHEME', 'http')
-        self.secret_key = os.getenv('SECRET_KEY')
-        self.server_name = os.getenv('SERVER_NAME')
-        self.version = os.getenv('APP_VERSION', 'unknown')
+        self.log_format = os.getenv(
+            "LOG_FORMAT", "%(levelname)s [%(name)s] %(message)s"
+        )
+        self.log_level = os.getenv("LOG_LEVEL", "INFO")
+        self.scheme = os.getenv("SCHEME", "http")
+        self.secret_key = os.getenv("SECRET_KEY")
+        self.server_name = os.getenv("SERVER_NAME")
+        self.version = os.getenv("APP_VERSION", "unknown")
