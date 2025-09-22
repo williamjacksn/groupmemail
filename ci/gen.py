@@ -126,23 +126,22 @@ def gen_ruff_workflow():
             "description": f"This workflow ({target}) was generated from {THIS_FILE}"
         },
         "jobs": {
-            "ruff": {
-                "name": "Run ruff linting and formatting checks",
+            "ruff-check": {
+                "name": "Run ruff check",
                 "runs-on": "ubuntu-latest",
                 "steps": [
                     ACTIONS_CHECKOUT,
-                    {
-                        "name": "Run ruff check",
-                        "uses": "astral-sh/ruff-action@v3",
-                        "with": {"args": "check --output-format=github"},
-                    },
-                    {
-                        "name": "Run ruff format",
-                        "uses": "astral-sh/ruff-action@v3",
-                        "with": {"args": "format --check"},
-                    },
+                    {"name": "Run ruff check", "run": "sh ci/ruff-check.sh"},
                 ],
-            }
+            },
+            "ruff-format": {
+                "name": "Run ruff format",
+                "runs-on": "ubuntu-latest",
+                "steps": [
+                    ACTIONS_CHECKOUT,
+                    {"name": "Run ruff format", "run": "sh ci/ruff-format.sh"},
+                ],
+            },
         },
     }
     gen(content, target)
