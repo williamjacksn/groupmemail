@@ -9,8 +9,9 @@ class Config:
     server_name: str
     version: str
 
-    def __init__(self):
-        """Instantiating a Config object will automatically read the following environment variables:
+    def __init__(self) -> None:
+        """Instantiating a Config object will automatically read the following
+        environment variables:
 
         APP_VERSION, LOG_FORMAT, LOG_LEVEL, SCHEME, SECRET_KEY, SERVER_NAME
 

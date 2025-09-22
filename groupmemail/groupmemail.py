@@ -1,9 +1,11 @@
-import flask
-import groupmemail.config
 import logging
 import sys
+
+import flask
 import waitress
 import werkzeug.middleware.proxy_fix
+
+import groupmemail.config
 
 config = groupmemail.config.Config()
 
@@ -18,7 +20,7 @@ app.config["SERVER_NAME"] = config.server_name
 
 
 @app.before_request
-def before_request():
+def before_request() -> None:
     app.logger.debug(f"{flask.request.method} {flask.request.path}")
 
 
@@ -31,18 +33,18 @@ def before_request():
 @app.route("/reset-callback-urls")
 @app.route("/stripe-webhook", methods=["POST"])
 @app.route("/")
-def index():
+def index() -> str:
     return "ok"
 
 
 @app.route("/incoming/<int:entity_id>", methods=["POST"])
 @app.route("/subscribe/<int:entity_id>")
 @app.route("/unsubscribe/<int:entity_id>")
-def with_entity_id(entity_id):
+def with_entity_id(entity_id: int) -> str:
     return "ok"
 
 
-def main():
+def main() -> None:
     logging.basicConfig(format=config.log_format, level="DEBUG", stream=sys.stdout)
     app.logger.debug(f"groupmemail {config.version}")
     app.logger.debug(f"Changing log level to {config.log_level}")

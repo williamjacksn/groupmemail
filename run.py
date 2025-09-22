@@ -1,9 +1,11 @@
-import groupmemail.groupmemail
 import signal
 import sys
+import types
+
+import groupmemail.groupmemail
 
 
-def handle_sigterm(_signal, _frame):
+def handle_sigterm(_signal: int, _frame: types.FrameType) -> None:
     sys.exit()
 
 
